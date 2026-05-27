@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mi cuenta | CÚBICO</title>
+  <link rel="stylesheet" href="/assets/portal.css">
+</head>
+<body class="portal-body" data-page="client">
+
+  <header class="portal-top">
+    <a class="portal-logo" href="/">
+      <img src="/assets/logo-cubico.svg" alt="CÚBICO">
+    </a>
+    <div class="portal-actions">
+      <a class="portal-link" href="/tracking/">Tracking</a>
+      <button id="logout" class="btn ghost" type="button" style="color:#fff;border-color:#333">Salir</button>
+    </div>
+  </header>
+
+  <main class="portal-shell" hidden>
+    <div class="dashboard">
+
+      <aside class="side">
+        <a class="active" href="#resumen">Resumen</a>
+        <a href="#paquetes">Paquetes</a>
+        <a href="#direccion">Dirección Miami</a>
+        <a href="#editar">Editar perfil</a>
+        <a href="/tracking/">Buscar tracking externo</a>
+      </aside>
+
+      <section>
+
+        <!-- ── ENCABEZADO: NOMBRE Y CÓDIGO CBC ── -->
+        <div class="dash-head">
+          <div>
+            <div class="eyebrow">Panel del cliente</div>
+            <h1 class="portal-title" style="font-size:54px">Hola, <span id="clientName">cliente</span>.</h1>
+          </div>
+          <div class="portal-card" style="min-width:240px">
+            <label>Código de casillero</label>
+            <div style="font-size:34px;font-weight:950" id="clientCode">CBC-000</div>
+          </div>
+        </div>
+
+        <!-- ── ESTADÍSTICAS: CORREO, TELÉFONO, MODALIDAD ── -->
+        <div class="stat-row" id="resumen">
+          <div class="portal-card">
+            <label>Correo</label>
+            <strong id="clientEmail">—</strong>
+          </div>
+          <div class="portal-card">
+            <label>Teléfono</label>
+            <strong id="clientPhone">—</strong>
+          </div>
+          <div class="portal-card">
+            <label>Modalidad</label>
+            <strong id="clientDelivery">—</strong>
+          </div>
+          <div class="portal-card">
+            <label>Saldo</label>
+            <strong>Ver paquetes</strong>
+          </div>
+        </div>
+
+        <!-- ── EDITAR PERFIL ── -->
+        <div id="editar" class="portal-card" style="margin-bottom:18px">
+          <div class="eyebrow">Editar perfil</div>
+          <form id="profileForm" class="form-grid">
+            <div>
+              <label>Teléfono</label>
+              <input id="editPhone">
+            </div>
+            <div>
+              <label>Zona o dirección en Panamá</label>
+              <input id="editAddress">
+            </div>
+            <div>
+              <label>Modalidad preferida</label>
+              <select id="editDelivery">
+                <option>Retiro coordinado</option>
+                <option>Delivery</option>
+                <option>Ambas opciones</option>
+              </select>
+            </div>
+            <div class="full">
+              <button class="btn" type="submit">Guardar cambios</button>
+              <div id="profileMsg" class="message"></div>
+            </div>
+          </form>
+        </div>
+
+        <!-- ── DIRECCIÓN EN MIAMI ── -->
+        <div id="direccion" class="portal-card" style="margin-bottom:18px">
+          <div class="eyebrow">Tu dirección en Miami</div>
+          <p>
+            <strong id="miamiLine">Nombre Apellido CBC-000</strong><br>
+            7854 NW 46TH ST SUITE 2<br>
+            CUBICO ste2<br>
+            Doral, FL 33195-6085
+          </p>
+          <p class="portal-note">Incluye siempre tu código CBC para poder asignar tu paquete cuando sea procesado por nuestro equipo.</p>
+        </div>
+
+        <!-- ── PAQUETES ASIGNADOS ── -->
+        <div id="paquetes" class="portal-card">
+          <div class="dash-head">
+            <div>
+              <div class="eyebrow">Paquetes asignados</div>
+              <h2>Disponibles, pendientes y entregados</h2>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tracking</th>
+                  <th>Descripción</th>
+                  <th>Estatus</th>
+                  <th>Tipo</th>
+                  <th>Saldo</th>
+                  <th>Pago</th>
+                </tr>
+              </thead>
+              <tbody id="clientPackages">
+                <tr><td colspan="6" class="empty">Cargando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/assets/supabase-config.js"></script>
+  <script src="/assets/portal.js"></script>
+
+</body>
+</html>

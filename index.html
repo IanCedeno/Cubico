@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CÚBICO | Logística · Carga · Soluciones</title>
+  <meta name="description" content="CÚBICO: casillero, carga aérea, carga marítima, tracking externo y soluciones logísticas para Panamá." />
+  <meta property="og:title" content="CÚBICO | Algo grande se está moviendo en Panamá" />
+  <meta property="og:description" content="Nueva visión. Nuevo estándar. Logística · Carga · Soluciones." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/assets/img/og-cubico.jpg" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="preload" href="/assets/styles.css" as="style" />
+  <link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body>
+  <div class="grain"></div>
+  <div class="floating-mark" aria-hidden="true"><img src="/assets/cube-mark.svg" alt="" /></div>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="CÚBICO inicio"><img src="/assets/logo-cubico.svg" alt="CÚBICO" /></a>
+    <nav>
+      <a href="#top">Inicio</a>
+      <a href="/tracking/">Buscar tracking</a>
+      <a href="#registro">Registrarme</a>
+      <a href="#cotizar">Cotizar</a>
+      <a href="/entrar/">Entrar</a>
+      <a href="#contacto">Contactar</a>
+    </nav>
+    <a class="header-cta" href="https://wa.me/50760705727" target="_blank" rel="noreferrer">WhatsApp</a>
+  </header>
+
+  <main id="top">
+    <section class="hero photo-hero">
+      <div class="hero-content reveal">
+        <p class="eyebrow">Próximamente</p>
+        <h1>Algo grande<br>se está moviendo<br>en <span>Panamá.</span></h1>
+        <p class="lead">Nueva visión. Nuevo estándar.<br>Logística · Carga · Soluciones.</p>
+        <div class="actions">
+          <a class="btn primary" href="/tracking/">Buscar tracking</a>
+          <a class="btn ghost" href="#registro">Registrarme</a>
+          <a class="btn ghost" href="#cotizar">Cotizar</a>
+        </div>
+      </div>
+      <div class="scroll-cue">⌄</div>
+    </section>
+
+    <section id="sobre" class="section split">
+      <div class="copy-block">
+        <p class="eyebrow">Sobre Cúbico</p>
+        <h2>Tu casillero y operación logística con una experiencia más clara, rápida y ordenada.</h2>
+        <p>Te registras, recibes tu código CÚBICO, compras usando nuestra dirección permanente en Miami y luego visualizas tus paquetes cuando sean procesados y asignados por nuestro equipo en Panamá.</p>
+        <div class="values">
+          <article><strong>Registro gratuito</strong><span>Sin cargos mensuales ni anuales.</span></article>
+          <article><strong>Dirección USA</strong><span>Bodega permanente en Doral, Florida.</span></article>
+          <article><strong>Código CBC</strong><span>Identificación única para cada cliente.</span></article>
+          <article><strong>Tracking externo</strong><span>Consulta aérea o marítima sin alterar tu cuenta.</span></article>
+        </div>
+      </div>
+      <div class="visual-card about-photo" aria-label="Operación logística aérea"></div>
+    </section>
+
+    <section id="registro" class="section registration-section">
+      <div class="copy-block narrow-copy">
+        <p class="eyebrow">Crear casillero</p>
+        <h2>Regístrate y recibe tu código <span>CBC</span>.</h2>
+        <p>La cuenta de cliente tendrá un código único tipo <strong>CBC-001</strong>. Ese código debe acompañar el nombre del cliente en las compras para que el equipo pueda identificar y asignar correctamente los paquetes.</p>
+      </div>
+      <div class="address-card">
+        <span>Dirección de compras</span>
+        <h3>7854 NW 46TH ST SUITE 2<br>CUBICO STE2<br>Doral, FL 33195-6085</h3>
+        <p>Formato recomendado: <strong>Nombre Apellido CBC-001</strong></p>
+        <a class="btn primary" href="#contacto">Solicitar mi casillero</a>
+      </div>
+    </section>
+
+    <section id="cotizar" class="section calculator-section">
+      <div class="calculator-copy">
+        <p class="eyebrow">Cotizador</p>
+        <h2>Calcula una referencia de tu envío.</h2>
+        <p>Selecciona el tipo de carga e introduce los datos solicitados. La cotización se calcula de forma automática según la modalidad.</p>
+      </div>
+      <div class="calc-card">
+        <div class="calc-toggle" role="tablist" aria-label="Tipo de carga">
+          <button type="button" class="calc-mode active" data-mode="air">Flete aéreo</button>
+          <button type="button" class="calc-mode" data-mode="ocean">Flete marítimo</button>
+        </div>
+        <form class="quote-form" id="quoteForm">
+          <div class="air-fields">
+            <label>Peso real en libras<input id="airWeight" type="number" min="0" step="0.01" placeholder="Ej. 2.25" /></label>
+          </div>
+          <div class="ocean-fields" hidden>
+            <label>Largo en pulgadas<input id="oceanLength" type="number" min="1" step="1" inputmode="numeric" placeholder="Ej. 18" /></label>
+            <label>Alto en pulgadas<input id="oceanHeight" type="number" min="1" step="1" inputmode="numeric" placeholder="Ej. 12" /></label>
+            <label>Ancho en pulgadas<input id="oceanWidth" type="number" min="1" step="1" inputmode="numeric" placeholder="Ej. 10" /></label>
+          </div>
+          <button type="submit">Calcular</button>
+        </form>
+        <div class="quote-result" id="quoteResult">
+          <span>Resultado</span>
+          <strong>Introduce los datos para cotizar.</strong>
+          <p>Aéreo: $2.90 por libra. Marítimo: $12.00 por pie cúbico.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="servicios" class="section services">
+      <p class="eyebrow">Nuestros servicios</p>
+      <h2>Soluciones integrales para tu carga.</h2>
+      <div class="service-grid">
+        <article class="svc s1"><span>01</span><h3>Casillero</h3><p>Registro gratuito, código CBC y dirección permanente en USA.</p></article>
+        <article class="svc s2"><span>02</span><h3>Carga aérea</h3><p>Pago por peso real según tarifa vigente por libra.</p></article>
+        <article class="svc s3"><span>03</span><h3>Carga marítima</h3><p>Cubicaje en pulgadas: largo × alto × ancho / 1728.</p></article>
+        <article class="svc s4"><span>04</span><h3>Retiro</h3><p>Coordinación de paquetes disponibles para retirar.</p></article>
+        <article class="svc s5"><span>05</span><h3>Delivery</h3><p>Opción de entrega coordinada según zona y disponibilidad.</p></article>
+      </div>
+    </section>
+
+    <section class="section info-accordion">
+      <p class="eyebrow">Información útil</p>
+      <h2>Todo lo importante, limpio y directo.</h2>
+      <div class="accordion-list">
+        <details><summary>FAQ</summary><div class="info-content faq-grid">
+          <article><h3>¿Cómo obtengo mi código CÚBICO?</h3><p>Completas el registro y el sistema te asigna un código único tipo CBC-001.</p></article>
+          <article><h3>¿Qué dirección debo usar para mis compras?</h3><p>7854 NW 46TH ST SUITE 2, CUBICO STE2, Doral, FL 33195-6085. Recomendamos colocar tu nombre junto a tu código CBC.</p></article>
+          <article><h3>¿Qué pasa si no coloco mi código CBC?</h3><p>El paquete puede requerir revisión manual y demorar en ser asignado a tu cuenta.</p></article>
+          <article><h3>¿Cuándo aparece mi paquete en mi cuenta?</h3><p>Aparece cuando llega a Panamá, se procesa y se asigna internamente a tu usuario.</p></article>
+          <article><h3>¿Por qué mi tracking dice entregado en Miami pero no aparece en CÚBICO?</h3><p>Porque el tracking externo solo muestra el estado logístico previo. CÚBICO actualiza tu cuenta cuando el paquete es procesado en Panamá.</p></article>
+          <article><h3>¿Cómo se calcula el flete?</h3><p>Aéreo por peso real. Marítimo por cubicaje: largo × alto × ancho / 1728.</p></article>
+          <article><h3>¿Puedo solicitar delivery?</h3><p>Sí, podrás escoger retiro coordinado, delivery o ambas opciones según disponibilidad.</p></article>
+          <article><h3>¿Qué hago si necesito devolver un producto?</h3><p>Debes contactarnos antes de gestionar la devolución para validar tiempos, condiciones y costos aplicables.</p></article>
+          <article><h3>¿Qué artículos tienen restricciones?</h3><p>Algunos productos pueden requerir permisos, revisión especial o no ser transportables. Consulta antes de comprar artículos sensibles.</p></article>
+          <article><h3>¿Cómo puedo contactar a CÚBICO?</h3><p>Por WhatsApp, correo o Instagram desde la sección de contacto.</p></article>
+        </div></details>
+        <details><summary>Condiciones del servicio</summary><div class="info-content"><p>El servicio de CÚBICO se apoya en registro gratuito, dirección permanente en USA y asignación interna de paquetes cuando la mercancía es recibida y procesada por nuestro equipo. No cobramos cargos mensuales ni anuales por mantener tu casillero activo.</p></div></details>
+        <details><summary>Horario de bodega Miami</summary><div class="info-content"><p>Nuestra bodega en Miami opera de lunes a viernes, de 9:00 a.m. a 5:00 p.m. Los tiempos de recepción y procesamiento pueden variar según volumen, temporada y confirmación de entrega del courier externo.</p></div></details>
+        <details><summary>Entrega estimada en Panamá</summary><div class="info-content"><p>La entrega o disponibilidad de retiro en Panamá se confirma luego de que el paquete sea recibido, procesado y asignado por el equipo de CÚBICO. El tracking externo es informativo y no reemplaza el estado interno del paquete.</p></div></details>
+      </div>
+    </section>
+
+    <section id="contacto" class="section contact">
+      <div class="contact-copy">
+        <p class="eyebrow">Contáctanos</p>
+        <h2>Sé parte de <span>lo que viene.</span></h2>
+        <p>Déjanos tus datos y te contactamos para crear tu casillero o resolver cualquier consulta.</p>
+      </div>
+      <form name="cubico-leads" method="POST" action="/gracias/">
+        <label>Nombre completo<input required name="nombre" autocomplete="name" /></label>
+        <label>Correo electrónico<input required type="email" name="email" autocomplete="email" /></label>
+        <label>Teléfono / WhatsApp<input name="telefono" autocomplete="tel" /></label>
+        <label>Zona / dirección en Panamá<input name="zona" autocomplete="street-address" /></label>
+        <label>Modalidad preferida<select name="modalidad"><option>Retiro coordinado</option><option>Delivery</option><option>Ambas opciones</option></select></label>
+        <button type="submit">Enviar</button>
+        <small>Tu información está segura con nosotros.</small>
+      </form>
+    </section>
+  </main>
+
+  <footer>
+    <img src="/assets/logo-cubico.svg" alt="CÚBICO" />
+    <div><strong>Servicios</strong><a href="/tracking/">Buscar tracking</a><a href="#cotizar">Cotizar</a><a href="#registro">Crear casillero</a><a href="/entrar/">Entrar</a></div>
+    <div><strong>Contáctanos</strong><a href="https://wa.me/50760705727">+507 6070-5727</a><a href="mailto:info@cubico.com.pa">info@cubico.com.pa</a><a href="https://www.instagram.com/cubicopa?igsh=YmM1Y3k3ZmE5bTNy" target="_blank" rel="noreferrer">@cubicopa</a><span>Panamá, República de Panamá</span></div>
+    <p class="copyright">© 2026 CÚBICO. Todos los derechos reservados. Conectamos lo que importa.</p>
+  </footer>
+
+  <script>
+    const modes = document.querySelectorAll('.calc-mode');
+    const airFields = document.querySelector('.air-fields');
+    const oceanFields = document.querySelector('.ocean-fields');
+    const quoteForm = document.getElementById('quoteForm');
+    const quoteResult = document.getElementById('quoteResult');
+    let activeMode = 'air';
+
+    modes.forEach(btn => btn.addEventListener('click', () => {
+      activeMode = btn.dataset.mode;
+      modes.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      airFields.hidden = activeMode !== 'air';
+      oceanFields.hidden = activeMode !== 'ocean';
+      quoteResult.innerHTML = '<span>Resultado</span><strong>Introduce los datos para cotizar.</strong><p>Aéreo: $2.90 por libra. Marítimo: $12.00 por pie cúbico.</p>';
+    }));
+
+    const toPositiveInteger = (value) => {
+      const n = Number(value || 0);
+      if (!n || n < 0) return 0;
+      return Math.ceil(n);
+    };
+
+    quoteForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (activeMode === 'air') {
+        const raw = Number(document.getElementById('airWeight').value || 0);
+        if (!raw) return;
+        const rounded = Math.ceil(raw);
+        const total = rounded * 2.90;
+        quoteResult.innerHTML = `<span>Flete aéreo</span><strong>${rounded} lb × $2.90 = $${total.toFixed(2)}</strong><p>Peso ingresado: ${raw} lb. Tarifa base: $2.90 por libra.</p>`;
+      } else {
+        const l = toPositiveInteger(document.getElementById('oceanLength').value);
+        const h = toPositiveInteger(document.getElementById('oceanHeight').value);
+        const w = toPositiveInteger(document.getElementById('oceanWidth').value);
+        if (!l || !h || !w) return;
+        const cubicFeetRaw = (l * h * w) / 1728;
+        const cubicFeet = Math.ceil(cubicFeetRaw);
+        const total = cubicFeet * 12;
+        quoteResult.innerHTML = `<span>Flete marítimo</span><strong>${cubicFeet} pie³ × $12.00 = $${total.toFixed(2)}</strong><p>Medidas ingresadas: ${l}" × ${h}" × ${w}". Tarifa base: $12.00 por pie cúbico.</p>`;
+      }
+    });
+
+
+    const leadForm = document.querySelector('form[name="cubico-leads"]');
+    if (leadForm) {
+      leadForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const button = leadForm.querySelector('button[type="submit"]');
+        const originalText = button ? button.textContent : '';
+        if (button) { button.disabled = true; button.textContent = 'Enviando...'; }
+        const data = Object.fromEntries(new FormData(leadForm).entries());
+        try {
+          const response = await fetch('/.netlify/functions/send-lead', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.ok) throw new Error(result.error || 'No se pudo enviar.');
+          window.location.href = '/gracias/';
+        } catch (error) {
+          alert('No se pudo enviar el formulario. Escríbenos por WhatsApp o intenta nuevamente.');
+          if (button) { button.disabled = false; button.textContent = originalText; }
+        }
+      });
+    }
+
+  </script>
+</body>
+</html>

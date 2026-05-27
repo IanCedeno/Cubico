@@ -1,0 +1,13 @@
+CAMBIOS V7 CÚBICO
+
+1. El registro ahora genera un código CBC automático desde el frontend.
+2. El correo de bienvenida ya muestra el código CBC generado, no “Pendiente de asignación”.
+3. Si el usuario queda logueado después del registro, se redirige al portal de cliente.
+4. Si Supabase exige confirmación por correo, queda mensaje con botón “Ir a entrar”.
+5. Se agregó SUPABASE_AUTO_CBC_SETUP.sql para que Supabase cree/guarde perfiles y códigos automáticamente.
+
+IMPORTANTE:
+Antes de probar otro registro real, entra a Supabase > SQL Editor, pega y ejecuta SUPABASE_AUTO_CBC_SETUP.sql.
+Eso es lo que permite que el casillero quede guardado automáticamente en la base de datos.
+
+Luego sube este ZIP completo a Netlify.

@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin | CÚBICO</title>
+  <link rel="stylesheet" href="/assets/portal.css">
+</head>
+<body class="portal-body" data-page="admin">
+
+  <header class="portal-top" hidden>
+    <a class="portal-logo" href="/">
+      <img src="/assets/logo-cubico.svg" alt="CÚBICO">
+    </a>
+    <div class="portal-actions">
+      <a class="portal-link" href="/cliente/">Cliente</a>
+      <button id="logout" class="btn ghost" type="button" style="color:#fff;border-color:#333">Salir</button>
+    </div>
+  </header>
+
+  <main class="portal-shell" hidden>
+    <div class="dashboard">
+
+      <aside class="side">
+        <a class="active" href="#resumen">Resumen</a>
+        <a href="#crear">Asignar paquete</a>
+        <a href="#clientes">Clientes</a>
+        <a href="#paquetes">Paquetes</a>
+      </aside>
+
+      <section>
+        <div class="dash-head">
+          <div>
+            <div class="eyebrow">Panel administrador</div>
+            <h1 class="portal-title" style="font-size:54px">Control operativo.</h1>
+            <p class="portal-sub">Asigna paquetes, modifica estados y consulta clientes registrados.</p>
+          </div>
+        </div>
+
+        <!-- ── ESTADÍSTICAS ── -->
+        <div class="stat-row" id="resumen">
+          <div class="portal-card">
+            <label>Clientes</label>
+            <strong id="totalClients">0</strong>
+          </div>
+          <div class="portal-card">
+            <label>Paquetes</label>
+            <strong id="totalPackages">0</strong>
+          </div>
+          <div class="portal-card">
+            <label>Pendientes</label>
+            <strong id="totalPending">0</strong>
+          </div>
+          <div class="portal-card">
+            <label>Base</label>
+            <strong>Supabase</strong>
+          </div>
+        </div>
+
+        <!-- ── FORMULARIO: ASIGNAR / EDITAR PAQUETE ── -->
+        <div id="crear" class="portal-card" style="margin-bottom:18px">
+          <div class="eyebrow">Asignar paquete</div>
+          <form id="packageForm" class="form-grid">
+
+            <div class="full">
+              <label>Buscar cliente (CBC, nombre o correo)</label>
+              <input id="clientSearch" placeholder="Ej. CBC-X4R9TZ o Juan García" autocomplete="off" style="margin-bottom:4px">
+              <div id="clientSuggestions" style="display:none;border:1px solid #333;border-radius:8px;max-height:160px;overflow-y:auto;background:#111;margin-bottom:6px"></div>
+              <input id="clientId" type="hidden">
+              <span id="clientSelected" style="font-size:12px;color:#888"></span>
+            </div>
+
+            <div>
+              <label>Tracking</label>
+              <input id="trackingNumber" required>
+            </div>
+            <div>
+              <label>Descripción</label>
+              <input id="description" placeholder="Ej. Amazon / ropa / repuesto">
+            </div>
+            <div>
+              <label>Estatus</label>
+              <select id="status">
+                <option>Por retirar</option>
+                <option>Pendiente de pago</option>
+                <option>Disponible</option>
+                <option>Entregado</option>
+              </select>
+            </div>
+            <div>
+              <label>Tipo</label>
+              <select id="shippingType">
+                <option>Aéreo</option>
+                <option>Marítimo</option>
+              </select>
+            </div>
+            <div>
+              <label>Saldo</label>
+              <input id="amountDue" type="number" min="0" step="0.01">
+            </div>
+            <div>
+              <label>Pago</label>
+              <select id="paymentStatus">
+                <option>Pendiente</option>
+                <option>Pagado</option>
+              </select>
+            </div>
+
+            <div class="full">
+              <button id="packageSubmitBtn" class="btn">Guardar paquete</button>
+              <button type="button" id="cancelEdit" class="btn ghost" style="display:none;margin-left:8px;color:#fff;border-color:#444">Cancelar edición</button>
+              <div id="adminMsg" class="message"></div>
+              <input id="editPackageId" type="hidden">
+            </div>
+
+          </form>
+        </div>
+
+        <!-- ── TABLA: CLIENTES ── -->
+        <div id="clientes" class="portal-card" style="margin-bottom:18px">
+          <div class="eyebrow">Clientes</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>CBC</th>
+                  <th>Nombre</th>
+                  <th>Cédula</th>
+                  <th>Correo</th>
+                  <th>Teléfono</th>
+                  <th>Rol</th>
+                </tr>
+              </thead>
+              <tbody id="clientList">
+                <tr><td colspan="6" class="empty">Cargando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── TABLA: PAQUETES ── -->
+        <div id="paquetes" class="portal-card">
+          <div class="eyebrow">Paquetes</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tracking</th>
+                  <th>Cliente</th>
+                  <th>Estatus</th>
+                  <th>Saldo</th>
+                  <th>Pago</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="packageList">
+                <tr><td colspan="5" class="empty">Cargando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/assets/supabase-config.js"></script>
+  <script src="/assets/portal.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Buscar Tracking | CÚBICO</title>
+  <meta name="description" content="Consulta externa de tracking para carga aérea y marítima. CÚBICO Panamá." />
+  <meta property="og:title" content="Buscar Tracking | CÚBICO" />
+  <meta property="og:description" content="Consulta el estado logístico externo de tu paquete." />
+  <meta property="og:image" content="/assets/img/og-cubico.jpg" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body>
+  <div class="grain"></div>
+  <header class="site-header solid-header">
+    <a class="brand" href="/" aria-label="CÚBICO inicio"><img src="/assets/logo-cubico.svg" alt="CÚBICO" /></a>
+    <nav>
+      <a href="/">Inicio</a>
+      <a href="/tracking/">Buscar tracking</a>
+      <a href="/#contacto">Registrarme</a>
+    </nav>
+    <a class="header-cta" href="https://wa.me/50760705727" target="_blank" rel="noreferrer">Contactar</a>
+  </header>
+
+  <main>
+    <section class="tracking-hero">
+      <div class="tracking-shell">
+        <div class="tracking-intro">
+          <p class="eyebrow">Consulta externa</p>
+          <h1>Busca tu<br><span>tracking.</span></h1>
+          <p class="lead mini-lead">Consulta el estado logístico externo de tu carga aérea o marítima.</p>
+          <p class="tracking-note">Esta consulta es informativa. El estado interno de CÚBICO se actualizará cuando el paquete sea procesado y asignado por nuestro equipo.</p>
+        </div>
+
+        <div class="tracking-card">
+          <form id="tracking-form" class="tracking-form">
+            <label>Número de tracking
+              <input id="tracking-number" name="tracking" required placeholder="Ej. TBA158463011601" autocomplete="off" />
+            </label>
+            <label>Tipo de carga
+              <select id="tracking-type" name="type">
+                <option value="air">Flete aéreo</option>
+                <option value="ocean">Flete marítimo</option>
+              </select>
+            </label>
+            <button id="tracking-button" type="submit">Buscar paquete</button>
+          </form>
+
+          <div id="tracking-result" class="tracking-result empty">
+            <span class="result-kicker">Resultado</span>
+            <p>Ingresa tu tracking para consultar el estado.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <img src="/assets/logo-cubico.svg" alt="CÚBICO" />
+    <div><strong>Portal</strong><a href="/tracking/">Buscar tracking</a><a href="/#contacto">Registrarme</a><a href="/">Inicio</a></div>
+    <div><strong>Contáctanos</strong><a href="https://wa.me/50760705727">+507 6070-5727</a><a href="mailto:info@cubico.com.pa">info@cubico.com.pa</a><span>Panamá, República de Panamá</span></div>
+    <p class="copyright">© 2026 CÚBICO. Consulta externa informativa.</p>
+  </footer>
+
+  <script src="/assets/tracking.js"></script>
+</body>
+</html>

@@ -35,6 +35,13 @@ function money(v) { return `$${Number(v || 0).toFixed(2)}`; }
 /** Devuelve el valor recibido o "—" si es null / undefined. */
 function safe(v) { return v ?? '—'; }
 
+/** Escapa HTML para evitar XSS en mensajes de error externos (ej: Supabase). */
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c])
+  );
+}
+
 /**
  * Valida los tres formatos de cédula panameña:
  *   Regular:                1-1234-12345   (provincia-tomo-número)
@@ -144,7 +151,7 @@ async function initAuthPage() {
     const password = $('#loginPassword').value;
     showMessage(loginMsg, 'Validando acceso...');
     const { data, error } = await supa.auth.signInWithPassword({ email, password });
-    if (error) return showMessage(loginMsg, error.message, 'bad');
+    if (error) return showMessage(loginMsg, escapeHtml(error.message), 'bad');
     const { data: profile } = await supa.from('profiles').select('role').eq('id', data.user.id).single();
     const role = profile?.role;
     location.href = role === 'admin' ? '/admin/' : role === 'repartidor' ? '/repartidor/' : '/cliente/';
@@ -189,7 +196,7 @@ async function initAuthPage() {
       password,
       options: { data: payload, emailRedirectTo: `${location.origin}/cliente/` }
     });
-    if (error) return showMessage(registerMsg, error.message, 'bad');
+    if (error) return showMessage(registerMsg, escapeHtml(error.message), 'bad');
 
     // El trigger handle_new_user en Supabase crea el perfil y asigna el código CBC.
     // Esperamos un momento para que el trigger termine antes de leer el perfil.
@@ -221,7 +228,7 @@ async function initAuthPage() {
     const { error } = await supa.auth.resetPasswordForEmail(email, {
       redirectTo: `${location.origin}/entrar/`
     });
-    if (error) return showMessage(forgotMsg, error.message, 'bad');
+    if (error) return showMessage(forgotMsg, escapeHtml(error.message), 'bad');
     showMessage(forgotMsg, 'Listo. Revisa tu correo y sigue el enlace para restablecer tu contraseña.');
     forgotForm.reset();
   });
@@ -236,7 +243,7 @@ async function initAuthPage() {
     if (newPass !== newPass2) return showMessage(resetMsg, 'Las contraseñas no coinciden.', 'bad');
     showMessage(resetMsg, 'Guardando contraseña...');
     const { error } = await supa.auth.updateUser({ password: newPass });
-    if (error) return showMessage(resetMsg, error.message, 'bad');
+    if (error) return showMessage(resetMsg, escapeHtml(error.message), 'bad');
     showMessage(resetMsg, '¡Contraseña actualizada! Redirigiendo a tu cuenta...');
     setTimeout(() => { location.href = '/cliente/'; }, 1500);
   });
@@ -315,19 +322,9 @@ async function initClientPage() {
   const ctx = await requireSession(false); if (!ctx) return;
   const { supa } = ctx;
   let profile = ctx.profile;
+  if (!profile) { location.href = '/entrar/'; return; }
 
   $('#clientName').textContent = `${safe(profile.first_name)} ${safe(profile.last_name)}`;
-
-  // Genera código CBC de respaldo si el trigger de Supabase no lo asignó
-  if (!profile.cbc_code) {
-    const fallbackCode = generateCbcCode(profile.first_name, profile.last_name);
-    const { data: updated } = await supa.from('profiles')
-      .update({ cbc_code: fallbackCode })
-      .eq('id', profile.id)
-      .select('*')
-      .single();
-    if (updated) profile = updated;
-  }
 
   // Datos del perfil en el dashboard
   $('#clientCode').textContent     = safe(profile.cbc_code || 'Pendiente de asignación');
@@ -348,28 +345,37 @@ async function initClientPage() {
   const profileForm = $('#profileForm');
   if (profileForm) {
     const editPhone    = $('#editPhone');
+    const editCedula   = $('#editCedula');
     const editAddress  = $('#editAddress');
     const editDelivery = $('#editDelivery');
     if (editPhone)   editPhone.value   = profile.phone || '';
+    if (editCedula)  editCedula.value  = profile.cedula || '';
     if (editAddress) editAddress.value = profile.address || '';
     if (editDelivery && profile.delivery_preference) editDelivery.value = profile.delivery_preference;
 
     profileForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const cedulaVal = editCedula?.value.trim().toUpperCase() || '';
+      if (cedulaVal && !CEDULA_RE.test(cedulaVal)) {
+        return showMessage($('#profileMsg'),
+          'Cédula inválida. Formatos: <strong>8-123-4567</strong>, <strong>PE-1234-12345</strong>, <strong>E-1234-123456</strong>.', 'bad');
+      }
       const btn  = profileForm.querySelector('button[type="submit"]');
       const orig = btn?.textContent;
       if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+      const updatePayload = {
+        phone:               editPhone.value.trim(),
+        address:             editAddress.value.trim(),
+        delivery_preference: editDelivery.value
+      };
+      if (cedulaVal) updatePayload.cedula = cedulaVal;
       const { data: updated, error } = await supa.from('profiles')
-        .update({
-          phone:               editPhone.value.trim(),
-          address:             editAddress.value.trim(),
-          delivery_preference: editDelivery.value
-        })
+        .update(updatePayload)
         .eq('id', profile.id)
         .select('*')
         .single();
       if (btn) { btn.disabled = false; btn.textContent = orig; }
-      if (error) return showMessage($('#profileMsg'), error.message, 'bad');
+      if (error) return showMessage($('#profileMsg'), escapeHtml(error.message), 'bad');
       profile = updated;
       $('#clientPhone').textContent    = safe(profile.phone);
       $('#clientDelivery').textContent = safe(profile.delivery_preference);
@@ -424,7 +430,14 @@ async function loadAdmin(supa) {
       <td>${safe(p.cedula)}</td>
       <td>${safe(p.email)}</td>
       <td>${safe(p.phone)}</td>
-      <td>${safe(p.role)}</td>
+      <td>
+        <select class="role-select" data-id="${p.id}"
+          style="background:#1a1a1a;color:#ccc;border:1px solid #333;border-radius:6px;padding:3px 8px;font-size:12px;cursor:pointer">
+          <option value="client"      ${p.role === 'client'      ? 'selected' : ''}>client</option>
+          <option value="admin"       ${p.role === 'admin'       ? 'selected' : ''}>admin</option>
+          <option value="repartidor"  ${p.role === 'repartidor'  ? 'selected' : ''}>repartidor</option>
+        </select>
+      </td>
     </tr>`
   ).join('') || `<tr><td colspan="6" class="empty">Sin clientes.</td></tr>`;
 
@@ -478,6 +491,21 @@ async function initAdminPage() {
   $('#logout')?.addEventListener('click', async () => { await supa.auth.signOut(); location.href = '/'; });
 
   await loadAdmin(supa);
+
+  // ── Cambio de rol desde la tabla de clientes ──────────────
+  $('#clientes')?.addEventListener('change', async (e) => {
+    const select = e.target.closest('.role-select');
+    if (!select) return;
+    select.disabled = true;
+    const { error } = await supa.from('profiles')
+      .update({ role: select.value })
+      .eq('id', select.dataset.id);
+    select.disabled = false;
+    if (error) {
+      showMessage($('#adminMsg'), escapeHtml(error.message), 'bad');
+      await loadAdmin(supa);
+    }
+  });
 
   // ── Autocompletado de búsqueda de clientes ────────────────
   const clientSearch      = $('#clientSearch');
@@ -546,7 +574,7 @@ async function initAdminPage() {
       const tracking = delBtn.dataset.tracking || 'este paquete';
       if (!confirm(`¿Eliminar ${tracking}? Esta acción no se puede deshacer.`)) return;
       const { error } = await supa.from('packages').delete().eq('id', delBtn.dataset.id);
-      if (error) return showMessage($('#adminMsg'), error.message, 'bad');
+      if (error) return showMessage($('#adminMsg'), escapeHtml(error.message), 'bad');
       showMessage($('#adminMsg'), 'Paquete eliminado.');
       await loadAdmin(supa);
       return;
@@ -599,11 +627,11 @@ async function initAdminPage() {
 
     if (editId) {
       const { error } = await supa.from('packages').update(payload).eq('id', editId);
-      if (error) return showMessage($('#adminMsg'), error.message, 'bad');
+      if (error) return showMessage($('#adminMsg'), escapeHtml(error.message), 'bad');
       showMessage($('#adminMsg'), 'Paquete actualizado correctamente.');
     } else {
       const { error } = await supa.from('packages').insert(payload);
-      if (error) return showMessage($('#adminMsg'), error.message, 'bad');
+      if (error) return showMessage($('#adminMsg'), escapeHtml(error.message), 'bad');
       showMessage($('#adminMsg'), 'Paquete creado y asignado.');
     }
 
@@ -620,6 +648,7 @@ async function initRepartidorPage() {
   const ctx = await requireSession(false);
   if (!ctx) return;
   const { supa, profile } = ctx;
+  if (!profile) { location.href = '/entrar/'; return; }
 
   if (!['repartidor', 'admin'].includes(profile?.role)) {
     location.href = '/cliente/';

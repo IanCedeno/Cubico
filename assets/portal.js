@@ -167,12 +167,16 @@ async function initAuthPage() {
     const phone     = $('#phone').value.trim();
     if (!/^\d{4}-\d{4}$/.test(phone)) return showMessage(registerMsg,
       'Teléfono inválido. Formato requerido: <strong>6000-0000</strong>.', 'bad');
+    const email = $('#regEmail').value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showMessage(registerMsg,
+      'Correo inválido. Ejemplo: <strong>nombre@correo.com</strong>.', 'bad');
+
     const payload   = {
       first_name:          firstName,
       last_name:           lastName,
       cedula,
       phone,
-      email:               $('#regEmail').value.trim(),
+      email,
       address:             $('#address').value.trim(),
       zone:                $('#zone').value.trim(),
       delivery_preference: $('#deliveryPreference').value

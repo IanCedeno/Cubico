@@ -422,7 +422,7 @@ async function initClientPage() {
   $('#clientEmail').textContent    = safe(profile.email);
   $('#clientPhone').textContent    = safe(profile.phone);
   $('#clientDelivery').textContent = safe(profile.delivery_preference);
-  $('#miamiLine').textContent      = `${safe(profile.first_name)} ${safe(profile.last_name)} ${safe(profile.cbc_code || '')}`;
+  $('#miamiLine').textContent      = safe(profile.cbc_code || 'Pendiente de asignación');
 
   // Paquetes asignados al cliente (ordenados del más reciente al más antiguo)
   const { data: packages = [] } = await supa
@@ -482,8 +482,7 @@ async function initClientPage() {
 
   // Botón: copiar dirección Miami
   $('#copyAddress')?.addEventListener('click', function () {
-    const name = `${safe(profile.first_name)} ${safe(profile.last_name)} ${safe(profile.cbc_code || '')}`.trim();
-    const addr = `${name}\n7854 NW 46TH ST SUITE 2\nCUBICO STE2\nDoral, FL 33195-6085`;
+    const addr = `${safe(profile.cbc_code || '')}\n7854 NW 46TH ST SUITE 2\nCUBICO STE2\nDoral, FL 33195-6085`;
     copyToClipboard(addr, this);
   });
 

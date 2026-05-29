@@ -492,6 +492,14 @@ async function initAdminPage() {
 
   await loadAdmin(supa);
 
+  // ── Auto-marcar pago como Pagado al seleccionar Entregado ──
+  $('#status')?.addEventListener('change', function () {
+    if (this.value === 'Entregado') {
+      const pay = $('#paymentStatus');
+      if (pay) pay.value = 'Pagado';
+    }
+  });
+
   // ── Cambio de rol desde la tabla de clientes ──────────────
   $('#clientes')?.addEventListener('change', async (e) => {
     const select = e.target.closest('.role-select');
@@ -700,7 +708,7 @@ async function initRepartidorPage() {
         btn.textContent = 'Actualizando...';
         const { error } = await supa
           .from('packages')
-          .update({ status: 'Entregado' })
+          .update({ status: 'Entregado', payment_status: 'Pagado' })
           .eq('id', btn.dataset.pkg);
         if (error) {
           btn.disabled = false;

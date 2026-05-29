@@ -475,6 +475,14 @@ async function initClientPage() {
     });
   }
 
+  // Menú lateral: marcar enlace activo al hacer clic
+  document.querySelectorAll('.side a').forEach(link => {
+    link.addEventListener('click', () => {
+      document.querySelectorAll('.side a').forEach(l => l.classList.remove('active'));
+      link.classList.add('active');
+    });
+  });
+
   // Botón: copiar código CBC
   $('#copyCbc')?.addEventListener('click', function () {
     copyToClipboard($('#clientCode').textContent.trim(), this);

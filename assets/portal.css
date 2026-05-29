@@ -1,2 +1,41 @@
 :root{--bg:#f4f1ec;--paper:#ffffff;--ink:#151515;--muted:#6f6f6f;--gold:#c9a35b;--line:#e4ded4;--black:#050607}
 *{box-sizing:border-box}body.portal-body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,Helvetica,sans-serif}.portal-top{height:76px;background:var(--black);display:flex;align-items:center;justify-content:space-between;padding:0 32px;border-bottom:1px solid rgba(255,255,255,.1)}.portal-logo img{height:46px}.portal-actions{display:flex;gap:12px;align-items:center}.portal-link{color:#fff;text-decoration:none;font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:12px}.portal-shell{width:min(1180px,calc(100% - 32px));margin:32px auto 60px}.portal-hero{display:grid;grid-template-columns:1.1fr .9fr;gap:22px;align-items:stretch}.portal-card{background:var(--paper);border:1px solid var(--line);border-radius:24px;padding:28px;box-shadow:0 18px 45px rgba(0,0,0,.07)}.eyebrow{font-size:12px;font-weight:900;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:16px}.portal-title{font-size:clamp(36px,7vw,78px);line-height:.92;margin:0 0 18px;font-weight:950;letter-spacing:-.05em}.portal-sub{font-size:18px;line-height:1.5;color:var(--muted);max-width:720px}.portal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px}.mini{border:1px solid var(--line);border-radius:18px;padding:18px;background:#faf8f4}.mini strong{display:block;font-size:22px;margin-bottom:4px}.btn{border:0;border-radius:999px;padding:15px 22px;background:var(--gold);color:#080808;text-decoration:none;font-weight:950;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}.btn.secondary{background:#111;color:#fff}.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.form-grid .full{grid-column:1/-1}label{display:block;font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;margin:0 0 8px;color:#4b4b4b}input,select,textarea{width:100%;border:1px solid var(--line);background:#fbfaf8;border-radius:16px;padding:15px 16px;font-size:15px;color:var(--ink)}input:focus,select:focus,textarea:focus{outline:2px solid rgba(201,163,91,.28);border-color:var(--gold)}.portal-note{font-size:13px;line-height:1.5;color:var(--muted)}.login-tabs{display:flex;background:#eee8dd;border:1px solid var(--line);border-radius:999px;padding:6px;margin-bottom:18px}.login-tabs button{flex:1;border:0;border-radius:999px;padding:13px;background:transparent;font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}.login-tabs button.active{background:#fff;box-shadow:0 8px 22px rgba(0,0,0,.08)}.status-pill{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-weight:900;font-size:12px;text-transform:uppercase}.dashboard{display:grid;grid-template-columns:260px 1fr;gap:20px}.side{background:#fff;border:1px solid var(--line);border-radius:24px;padding:20px;position:sticky;top:20px;height:max-content}.side a{display:block;padding:13px 14px;border-radius:14px;text-decoration:none;color:#111;font-weight:850}.side a:hover,.side a.active{background:#f0e8da}.dash-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:20px;background:#fff}table{width:100%;border-collapse:collapse;min-width:760px}th,td{text-align:left;padding:15px 16px;border-bottom:1px solid var(--line);font-size:14px}th{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:#777;background:#faf8f4}.empty{padding:28px;text-align:center;color:#777}.message{margin-top:12px;font-weight:800}.message:empty{display:none}.ok{color:#187a3a}.bad{color:#b42318}.hidden{display:none!important}@media(max-width:850px){.portal-top{padding:0 18px}.portal-logo img{height:36px}.portal-hero,.dashboard{grid-template-columns:1fr}.portal-grid,.stat-row{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.portal-title{font-size:48px}.side{position:static;display:flex;flex-wrap:wrap;gap:6px;padding:14px;height:auto}.side a{display:inline-flex;padding:8px 14px;font-size:11px}.dash-head{flex-direction:column}.portal-card{padding:18px}}
+
+/* ── STATUS PILL COLORS ──────────────────────────────── */
+.status-pill.s-miami{background:#e8eaf6;border-color:#9fa8da;color:#283593}
+.status-pill.s-transito{background:#fff3e0;border-color:#ffcc80;color:#e65100}
+.status-pill.s-panama{background:#e3f2fd;border-color:#90caf9;color:#1565c0}
+.status-pill.s-pendiente{background:#ffebee;border-color:#ef9a9a;color:#c62828}
+.status-pill.s-entregado{background:#e8f5e9;border-color:#a5d6a7;color:#1b5e20}
+
+/* ── PROGRESS BAR ────────────────────────────────────── */
+.pkg-progress{display:flex;align-items:center;margin-top:7px}
+.pkg-step-dot{width:8px;height:8px;border-radius:50%;background:#ddd;flex-shrink:0;transition:background .3s}
+.pkg-step-dot.done{background:var(--gold)}
+.pkg-step-line{flex:1;height:2px;background:#ddd;transition:background .3s;min-width:10px}
+.pkg-step-line.done{background:var(--gold)}
+
+/* ── TOAST ───────────────────────────────────────────── */
+.toast{position:fixed;bottom:28px;right:28px;padding:13px 20px;border-radius:12px;font-size:14px;font-weight:600;color:#fff;background:#151515;box-shadow:0 6px 28px rgba(0,0,0,.28);transform:translateY(16px);opacity:0;transition:transform .25s,opacity .25s;z-index:9999;max-width:300px;pointer-events:none}
+.toast.toast-show{transform:translateY(0);opacity:1}
+.toast.ok{background:#2e7d32}
+.toast.bad{background:#b71c1c}
+
+/* ── SKELETON ────────────────────────────────────────── */
+.sk{display:inline-block;height:13px;border-radius:4px;background:linear-gradient(90deg,#ebebeb 25%,#f5f5f5 50%,#ebebeb 75%);background-size:200% 100%;animation:shimmer 1.4s infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ── COPY BUTTON ─────────────────────────────────────── */
+.btn-copy{background:none;border:1px solid var(--line);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);transition:border-color .15s,color .15s;margin-top:8px;display:inline-block}
+.btn-copy:hover{border-color:var(--gold);color:var(--gold)}
+.btn-copy.copied{border-color:#2e7d32;color:#2e7d32}
+
+/* ── PASSWORD STRENGTH ───────────────────────────────── */
+.pwd-strength{height:4px;border-radius:2px;background:var(--line);overflow:hidden;margin-top:6px}
+.pwd-strength-bar{height:100%;width:0;border-radius:2px;transition:width .3s,background .3s}
+.pwd-label{font-size:11px;color:var(--muted);margin-top:3px;min-height:14px;transition:color .3s}
+
+/* ── EMPTY STATE ─────────────────────────────────────── */
+.empty-guide{padding:36px 20px;text-align:center;color:var(--muted);line-height:1.65;font-size:14px}
+.empty-guide strong{display:block;font-size:15px;color:var(--ink);margin-bottom:8px}
+.empty-guide a{color:var(--gold);font-weight:600;text-decoration:none}

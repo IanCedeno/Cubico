@@ -42,6 +42,62 @@ function escapeHtml(str) {
   );
 }
 
+/** Formatea una fecha ISO como texto relativo o fecha corta. */
+function formatDate(iso) {
+  if (!iso) return '—';
+  const d    = new Date(iso);
+  const diff = Math.floor((Date.now() - d) / 86400000);
+  if (diff === 0) return 'Hoy';
+  if (diff === 1) return 'Ayer';
+  if (diff < 7)  return `Hace ${diff} días`;
+  return d.toLocaleDateString('es-PA', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+/** Muestra un toast flotante en la esquina inferior derecha. */
+function toast(message, type = 'ok') {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = message;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add(type, 'toast-show'));
+  setTimeout(() => {
+    el.classList.remove('toast-show');
+    setTimeout(() => el.remove(), 280);
+  }, 3000);
+}
+
+/** Devuelve la clase CSS de color para una pastilla de estado. */
+function statusClass(status) {
+  const s = String(status || '').toLowerCase();
+  if (s.includes('miami'))                                          return 's-miami';
+  if (s.includes('tránsito') || s.includes('transito') || s.includes('camino')) return 's-transito';
+  if (s.includes('entregado'))                                      return 's-entregado';
+  if (s.includes('pendiente') || s.includes('pago'))               return 's-pendiente';
+  return 's-panama';
+}
+
+/** Renderiza una mini barra de progreso de 4 pasos para el estado de un paquete. */
+function progressBar(status) {
+  const s = String(status || '').toLowerCase();
+  let step = 2;
+  if (s.includes('miami'))                                           step = 0;
+  else if (s.includes('tránsito') || s.includes('transito') || s.includes('camino')) step = 1;
+  else if (s.includes('entregado'))                                  step = 3;
+  const dot  = (i) => `<div class="pkg-step-dot ${step >= i ? 'done' : ''}"></div>`;
+  const line = (i) => `<div class="pkg-step-line ${step >= i ? 'done' : ''}"></div>`;
+  return `<div class="pkg-progress">${dot(0)}${line(1)}${dot(1)}${line(2)}${dot(2)}${line(3)}${dot(3)}</div>`;
+}
+
+/** Copia texto al portapapeles y aplica clase visual de confirmación al botón. */
+function copyToClipboard(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '¡Copiado!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
 /**
  * Valida los tres formatos de cédula panameña:
  *   Regular:                1-1234-12345   (provincia-tomo-número)
@@ -124,6 +180,29 @@ async function initAuthPage() {
   $('#tabForgot')?.addEventListener('click',  () => setTab('forgot'));
   $('#backToLogin')?.addEventListener('click',() => setTab('login'));
   setTab(mode === 'registro' ? 'register' : 'login');
+
+  // Indicador de fuerza de contraseña
+  $('#regPassword')?.addEventListener('input', function () {
+    const bar   = $('#pwdStrengthBar');
+    const label = $('#pwdLabel');
+    if (!bar || !label) return;
+    const v = this.value;
+    const hasLower  = /[a-z]/.test(v);
+    const hasUpper  = /[A-Z]/.test(v);
+    const hasNum    = /\d/.test(v);
+    const hasSpec   = /[^a-zA-Z0-9]/.test(v);
+    const types     = [hasLower || hasUpper, hasNum, hasSpec].filter(Boolean).length;
+    let pct, color, text;
+    if (v.length < 6)                           { pct = 20;  color = '#c62828'; text = 'Muy débil'; }
+    else if (v.length < 8 || types === 1)       { pct = 40;  color = '#e65100'; text = 'Débil'; }
+    else if (v.length < 10 || types === 2)      { pct = 65;  color = '#f9a825'; text = 'Media'; }
+    else if (types === 3 && v.length >= 10)     { pct = 100; color = '#2e7d32'; text = 'Fuerte'; }
+    else                                        { pct = 80;  color = '#558b2f'; text = 'Buena'; }
+    bar.style.width      = `${pct}%`;
+    bar.style.background = color;
+    label.textContent    = text;
+    label.style.color    = color;
+  });
 
   // Nombre y apellido: bloquear entrada de dígitos en tiempo real
   ['#firstName', '#lastName'].forEach(sel => {
@@ -292,14 +371,26 @@ function renderClientPackages(items) {
   const tbody = $('#clientPackages');
   if (!tbody) return;
   if (!items.length) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty">Aún no tienes paquetes asignados en Panamá.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6">
+      <div class="empty-guide">
+        <strong>Aún no tienes paquetes asignados.</strong>
+        Usa tu dirección en Miami para tu próxima compra y aquí verás el seguimiento.
+        <br><br><a href="#direccion">Ver mi dirección en Miami →</a>
+      </div>
+    </td></tr>`;
     return;
   }
   tbody.innerHTML = items.map(p =>
     `<tr>
-      <td>${safe(p.tracking_number)}</td>
+      <td>
+        <div style="font-size:13px;font-weight:600">${safe(p.tracking_number)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${formatDate(p.created_at)}</div>
+      </td>
       <td>${safe(p.description)}</td>
-      <td><span class="status-pill">${safe(p.status)}</span></td>
+      <td>
+        <span class="status-pill ${statusClass(p.status)}">${safe(p.status)}</span>
+        ${progressBar(p.status)}
+      </td>
       <td>${safe(p.shipping_type)}</td>
       <td>${money(p.amount_due)}</td>
       <td>${safe(p.payment_status)}</td>
@@ -380,8 +471,21 @@ async function initClientPage() {
       $('#clientPhone').textContent    = safe(profile.phone);
       $('#clientDelivery').textContent = safe(profile.delivery_preference);
       showMessage($('#profileMsg'), 'Perfil actualizado correctamente.');
+      toast('Perfil guardado correctamente.');
     });
   }
+
+  // Botón: copiar código CBC
+  $('#copyCbc')?.addEventListener('click', function () {
+    copyToClipboard($('#clientCode').textContent.trim(), this);
+  });
+
+  // Botón: copiar dirección Miami
+  $('#copyAddress')?.addEventListener('click', function () {
+    const name = `${safe(profile.first_name)} ${safe(profile.last_name)} ${safe(profile.cbc_code || '')}`.trim();
+    const addr = `${name}\n7854 NW 46TH ST SUITE 2\nCUBICO STE2\nDoral, FL 33195-6085`;
+    copyToClipboard(addr, this);
+  });
 
   // Revelar contenido una vez que todos los datos están listos
   document.querySelector('.portal-shell')?.removeAttribute('hidden');
@@ -450,7 +554,7 @@ async function loadAdmin(supa) {
     return `<tr>
       <td>${safe(p.tracking_number)}</td>
       <td>${clientLabel}</td>
-      <td><span class="status-pill">${safe(p.status)}</span></td>
+      <td><span class="status-pill ${statusClass(p.status)}">${safe(p.status)}</span></td>
       <td>${money(p.amount_due)}</td>
       <td>${safe(p.payment_status)}</td>
       <td style="white-space:nowrap">
@@ -512,6 +616,8 @@ async function initAdminPage() {
     if (error) {
       showMessage($('#adminMsg'), escapeHtml(error.message), 'bad');
       await loadAdmin(supa);
+    } else {
+      toast('Rol actualizado correctamente.');
     }
   });
 
@@ -715,6 +821,7 @@ async function initRepartidorPage() {
           btn.textContent = 'Marcar como Entregado';
           return;
         }
+        toast('Paquete marcado como entregado.');
         const card = btn.closest('.delivery-card');
         card.style.transition = 'opacity .3s';
         card.style.opacity = '0';

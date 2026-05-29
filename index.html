@@ -24,7 +24,6 @@
       <a href="/entrar/?mode=registro">Registrarme</a>
       <a href="#cotizar">Cotizar</a>
       <a href="/entrar/">Entrar</a>
-      <a href="#contacto">Contactar</a>
     </nav>
     <a class="header-cta" href="https://wa.me/50760705727" target="_blank" rel="noreferrer">WhatsApp</a>
   </header>
@@ -69,7 +68,7 @@
         <span>Dirección de compras</span>
         <h3>7854 NW 46TH ST SUITE 2<br>CUBICO STE2<br>Doral, FL 33195-6085</h3>
         <p>Formato recomendado: <strong>Nombre Apellido CBC-001</strong></p>
-        <a class="btn primary" href="#contacto">Solicitar mi casillero</a>
+        <a class="btn primary" href="/entrar/?mode=registro">Solicitar mi casillero</a>
       </div>
     </section>
 
@@ -137,27 +136,11 @@
       </div>
     </section>
 
-    <section id="contacto" class="section contact">
-      <div class="contact-copy">
-        <p class="eyebrow">Contáctanos</p>
-        <h2>Sé parte de <span>lo que viene.</span></h2>
-        <p>Déjanos tus datos y te contactamos para crear tu casillero o resolver cualquier consulta.</p>
-      </div>
-      <form name="cubico-leads" method="POST" action="/gracias/">
-        <label>Nombre completo<input required name="nombre" autocomplete="name" /></label>
-        <label>Correo electrónico<input required type="email" name="email" autocomplete="email" /></label>
-        <label>Teléfono / WhatsApp<input name="telefono" autocomplete="tel" /></label>
-        <label>Zona / dirección en Panamá<input name="zona" autocomplete="street-address" /></label>
-        <label>Modalidad preferida<select name="modalidad"><option>Retiro coordinado</option><option>Delivery</option><option>Ambas opciones</option></select></label>
-        <button type="submit">Enviar</button>
-        <small>Tu información está segura con nosotros.</small>
-      </form>
-    </section>
   </main>
 
   <footer>
     <img src="/assets/logo-cubico.svg" alt="CÚBICO" />
-    <div><strong>Servicios</strong><a href="/tracking/">Buscar tracking</a><a href="#cotizar">Cotizar</a><a href="#registro">Crear casillero</a><a href="/entrar/">Entrar</a></div>
+    <div><strong>Servicios</strong><a href="/tracking/">Buscar tracking</a><a href="#cotizar">Cotizar</a><a href="/entrar/?mode=registro">Crear casillero</a><a href="/entrar/">Entrar</a></div>
     <div><strong>Contáctanos</strong><a href="https://wa.me/50760705727">+507 6070-5727</a><a href="mailto:info@cubico.com.pa">info@cubico.com.pa</a><a href="https://www.instagram.com/cubicopa?igsh=YmM1Y3k3ZmE5bTNy" target="_blank" rel="noreferrer">@cubicopa</a><span>Panamá, República de Panamá</span></div>
     <p class="copyright">© 2026 CÚBICO. Todos los derechos reservados. Conectamos lo que importa.</p>
   </footer>

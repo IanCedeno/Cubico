@@ -659,7 +659,7 @@ async function initAdminPage() {
 
     clientSuggestions.style.display = 'block';
     clientSuggestions.innerHTML = matches.map(p =>
-      `<div data-id="${p.id}" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--line);font-size:14px;color:var(--ink);transition:background .1s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''"
+      `<div data-id="${p.id}" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--line);font-size:14px;color:var(--ink);transition:background .1s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
         ${safe(p.cbc_code)} · ${safe(p.first_name)} ${safe(p.last_name)}
       </div>`
     ).join('');

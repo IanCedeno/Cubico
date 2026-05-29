@@ -71,7 +71,7 @@ exports.handler = async function(event) {
   }
   if (email.length > 200) return { statusCode: 400, body: JSON.stringify({ error: 'Correo demasiado largo.' }) };
   if (firstName.length + lastName.length > 120) return { statusCode: 400, body: JSON.stringify({ error: 'Nombre demasiado largo.' }) };
-  if (cbcCode && !/^CBC-[A-Z0-9]{1,20}$/.test(cbcCode)) return { statusCode: 400, body: JSON.stringify({ error: 'Código CBC inválido.' }) };
+  if (cbcCode && !/^CBC\d+-[A-Za-z0-9]{1,30}$/.test(cbcCode)) return { statusCode: 400, body: JSON.stringify({ error: 'Código CBC inválido.' }) };
 
   const fullName = `${firstName} ${lastName}`.trim() || 'Cliente CÚBICO';
   const miamiNameLine = cbcCode ? `${fullName} ${cbcCode}` : fullName;

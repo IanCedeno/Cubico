@@ -43,46 +43,6 @@ function safe(v) { return v ?? '—'; }
  */
 const CEDULA_RE = /^(\d{1,2}-\d{1,4}-\d{1,5}|PE-\d{1,4}-\d{1,5}|E-\d{1,4}-\d{1,6})$/;
 
-/**
- * Genera un código CBC personalizado basado en el nombre del cliente.
- * Formato: CBC-NombreApellido (máximo 16 caracteres del nombre).
- * Convierte tildes y caracteres especiales a su equivalente ASCII
- * (á→a, é→e, ñ→n, ü→u, etc.) y elimina cualquier carácter no alfanumérico.
- * Si no se provee nombre, genera 6 caracteres alfanuméricos aleatorios.
- *
- * @param {string} firstName - Nombre del cliente
- * @param {string} lastName  - Apellido del cliente
- * @returns {string} Ej: "CBC-IanCedeno" | "CBC-X4R9TZ" (fallback)
- */
-function generateCbcCode(firstName = '', lastName = '') {
-  const accentMap = {
-    'á':'a','à':'a','â':'a','ä':'a',
-    'é':'e','è':'e','ê':'e','ë':'e',
-    'í':'i','ì':'i','î':'i','ï':'i',
-    'ó':'o','ò':'o','ô':'o','ö':'o',
-    'ú':'u','ù':'u','û':'u','ü':'u',
-    'ñ':'n',
-    'Á':'A','À':'A','Â':'A','Ä':'A',
-    'É':'E','È':'E','Ê':'E','Ë':'E',
-    'Í':'I','Ì':'I','Î':'I','Ï':'I',
-    'Ó':'O','Ò':'O','Ô':'O','Ö':'O',
-    'Ú':'U','Ù':'U','Û':'U','Ü':'U',
-    'Ñ':'N'
-  };
-  const sanitize = (str) =>
-    String(str)
-      .replace(/./g, c => accentMap[c] || c)
-      .replace(/[^a-zA-Z0-9]/g, '');
-
-  const namePart = (sanitize(firstName) + sanitize(lastName)).slice(0, 16);
-  if (namePart) return 'CBC-' + namePart;
-
-  // Fallback: código aleatorio si no se proveyó nombre
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let code = '';
-  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  return 'CBC-' + code;
-}
 
 /**
  * Muestra un mensaje en el elemento dado.
@@ -158,6 +118,24 @@ async function initAuthPage() {
   $('#backToLogin')?.addEventListener('click',() => setTab('login'));
   setTab(mode === 'registro' ? 'register' : 'login');
 
+  // Nombre y apellido: bloquear entrada de dígitos en tiempo real
+  ['#firstName', '#lastName'].forEach(sel => {
+    $(sel)?.addEventListener('input', function() {
+      const pos = this.selectionStart;
+      const cleaned = this.value.replace(/[0-9]/g, '');
+      if (cleaned !== this.value) {
+        this.value = cleaned;
+        this.setSelectionRange(pos - 1, pos - 1);
+      }
+    });
+  });
+
+  // Teléfono: auto-formato XXXX-XXXX, máximo 8 dígitos
+  $('#phone')?.addEventListener('input', function() {
+    const digits = this.value.replace(/\D/g, '').slice(0, 8);
+    this.value = digits.length > 4 ? digits.slice(0, 4) + '-' + digits.slice(4) : digits;
+  });
+
   // ── Inicio de sesión ──────────────────────────────────────
   loginForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -186,17 +164,18 @@ async function initAuthPage() {
 
     const firstName = $('#firstName').value.trim();
     const lastName  = $('#lastName').value.trim();
-    const cbcCode   = generateCbcCode(firstName, lastName);
+    const phone     = $('#phone').value.trim();
+    if (!/^\d{4}-\d{4}$/.test(phone)) return showMessage(registerMsg,
+      'Teléfono inválido. Formato requerido: <strong>6000-0000</strong>.', 'bad');
     const payload   = {
       first_name:          firstName,
       last_name:           lastName,
       cedula,
-      phone:               $('#phone').value.trim(),
+      phone,
       email:               $('#regEmail').value.trim(),
       address:             $('#address').value.trim(),
       zone:                $('#zone').value.trim(),
-      delivery_preference: $('#deliveryPreference').value,
-      cbc_code:            cbcCode
+      delivery_preference: $('#deliveryPreference').value
     };
 
     showMessage(registerMsg, 'Creando casillero CÚBICO...');
@@ -207,11 +186,11 @@ async function initAuthPage() {
     });
     if (error) return showMessage(registerMsg, error.message, 'bad');
 
-    // El trigger handle_new_user en Supabase crea el perfil automáticamente,
-    // pero hacemos upsert para asegurar que todos los campos queden guardados.
+    // El trigger handle_new_user en Supabase crea el perfil y asigna el código CBC.
+    // Esperamos un momento para que el trigger termine antes de leer el perfil.
     let profile = null;
     if (data.user) {
-      await supa.from('profiles').upsert({ id: data.user.id, ...payload, role: 'client' }, { onConflict: 'id' });
+      await new Promise(r => setTimeout(r, 800));
       const { data: saved } = await supa.from('profiles').select('*').eq('id', data.user.id).single();
       profile = saved;
     }
@@ -220,10 +199,10 @@ async function initAuthPage() {
     fetch('/.netlify/functions/send-welcome', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ ...payload, cbc_code: profile?.cbc_code || cbcCode })
+      body:    JSON.stringify({ ...payload, cbc_code: profile?.cbc_code || '' })
     }).catch(() => {});
 
-    showMessage(registerMsg, `Registro recibido. Tu código es <strong>${profile?.cbc_code || cbcCode}</strong>. Revisa tu correo y luego entra a tu portal.<br><br><a href="/entrar/" class="btn btn-primary" style="display:inline-flex;text-decoration:none;">Ir a entrar</a>`);
+    showMessage(registerMsg, `Registro recibido. Tu código es <strong>${profile?.cbc_code || 'pendiente de asignación'}</strong>. Revisa tu correo y luego entra a tu portal.<br><br><a href="/entrar/" class="btn btn-primary" style="display:inline-flex;text-decoration:none;">Ir a entrar</a>`);
     registerForm.reset();
     if (data.session) setTimeout(() => { location.href = '/cliente/'; }, 1200);
   });

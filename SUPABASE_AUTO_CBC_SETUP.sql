@@ -5,6 +5,12 @@
 
 create extension if not exists pgcrypto;
 
+-- ── SECUENCIA: CONTADOR ÚNICO DE CASILLEROS ────────────────────────────────────
+
+-- Genera números únicos y crecientes para los códigos CBC.
+-- Formato final del código: CBC10001-NombreApellido
+create sequence if not exists public.cbc_counter start 10001 increment 1;
+
 -- ── TABLAS ─────────────────────────────────────────────────────────────────────
 
 -- Formatos de cédula aceptados:
@@ -47,48 +53,25 @@ create index if not exists idx_packages_client_id on public.packages(client_id);
 
 -- ── FUNCIONES DE GENERACIÓN DE CÓDIGO CBC ──────────────────────────────────────
 
--- Genera un código basado en el nombre del usuario: CBC-NombreApellido
--- Si ya existe ese código, agrega un sufijo de 2 caracteres aleatorios: CBC-NombreApellido-XY
--- Si primer + apellido producen una cadena vacía (solo caracteres especiales), genera CBC-XXXXXX aleatorio.
+-- Genera un código con número secuencial + nombre: CBC10001-NombreApellido
+-- El número proviene de cbc_counter (único y creciente; garantiza sin colisiones).
+-- Si nombre+apellido no aportan caracteres alfanuméricos, usa "Cliente" como base.
 create or replace function public.make_name_code(p_first text, p_last text)
 returns text
 language plpgsql
 as $$
 declare
-  base_name text;
-  base_code text;
-  candidate text;
-  suffix    text;
-  chars     text := 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  seq_num   bigint;
+  name_part text;
 begin
-  -- Quitar caracteres no alfanuméricos y truncar a 16 chars
-  base_name := left(regexp_replace(p_first || p_last, '[^a-zA-Z0-9]', '', 'g'), 16);
+  seq_num   := nextval('public.cbc_counter');
+  name_part := left(regexp_replace(p_first || p_last, '[^a-zA-Z0-9]', '', 'g'), 30);
 
-  -- Fallback aleatorio si el nombre no aporta caracteres válidos
-  if base_name = '' then
-    loop
-      candidate := 'CBC-' || upper(substr(md5(random()::text || clock_timestamp()::text), 1, 6));
-      exit when not exists (select 1 from public.profiles where cbc_code = candidate);
-    end loop;
-    return candidate;
+  if name_part = '' then
+    name_part := 'Cliente';
   end if;
 
-  base_code := 'CBC-' || base_name;
-
-  -- Intentar el código base sin sufijo
-  if not exists (select 1 from public.profiles where cbc_code = base_code) then
-    return base_code;
-  end if;
-
-  -- Si ya existe, agregar sufijo separado por guion hasta encontrar uno libre
-  loop
-    suffix := substr(chars, floor(random() * 36)::int + 1, 1) ||
-              substr(chars, floor(random() * 36)::int + 1, 1);
-    candidate := base_code || '-' || suffix;
-    exit when not exists (select 1 from public.profiles where cbc_code = candidate);
-  end loop;
-
-  return candidate;
+  return 'CBC' || seq_num::text || '-' || name_part;
 end;
 $$;
 
@@ -114,17 +97,10 @@ begin
     coalesce(new.raw_user_meta_data->>'address', ''),
     coalesce(new.raw_user_meta_data->>'zone', ''),
     coalesce(new.raw_user_meta_data->>'delivery_preference', ''),
-    case
-      -- Usar el código del frontend si viene y no está tomado
-      when nullif(new.raw_user_meta_data->>'cbc_code', '') is not null
-           and not exists (select 1 from public.profiles where cbc_code = new.raw_user_meta_data->>'cbc_code')
-      then new.raw_user_meta_data->>'cbc_code'
-      -- Si colisiona o no viene, generar basado en nombre
-      else public.make_name_code(
-        coalesce(nullif(new.raw_user_meta_data->>'first_name', ''), 'cliente'),
-        coalesce(nullif(new.raw_user_meta_data->>'last_name', ''), '')
-      )
-    end,
+    public.make_name_code(
+      coalesce(nullif(new.raw_user_meta_data->>'first_name', ''), 'cliente'),
+      coalesce(nullif(new.raw_user_meta_data->>'last_name', ''), '')
+    ),
     'client'
   )
   on conflict (id) do update set

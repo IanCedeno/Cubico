@@ -146,7 +146,8 @@ async function initAuthPage() {
     const { data, error } = await supa.auth.signInWithPassword({ email, password });
     if (error) return showMessage(loginMsg, error.message, 'bad');
     const { data: profile } = await supa.from('profiles').select('role').eq('id', data.user.id).single();
-    location.href = profile?.role === 'admin' ? '/admin/' : '/cliente/';
+    const role = profile?.role;
+    location.href = role === 'admin' ? '/admin/' : role === 'repartidor' ? '/repartidor/' : '/cliente/';
   });
 
   // ── Registro de nuevo casillero ───────────────────────────
@@ -613,6 +614,111 @@ async function initAdminPage() {
 }
 
 
+// ── PORTAL DEL REPARTIDOR (/repartidor/) ─────────────────────
+
+async function initRepartidorPage() {
+  const ctx = await requireSession(false);
+  if (!ctx) return;
+  const { supa, profile } = ctx;
+
+  if (!['repartidor', 'admin'].includes(profile?.role)) {
+    location.href = '/cliente/';
+    return;
+  }
+
+  const list = $('#deliveryList');
+
+  function renderDeliveryList(packages, clientMap) {
+    if (!list) return;
+    if (!packages.length) {
+      list.innerHTML = '<p class="pkg-empty">No hay paquetes pendientes de entrega.</p>';
+      return;
+    }
+
+    list.innerHTML = packages.map(pkg => {
+      const c = clientMap[pkg.client_id] || {};
+      const nombre = `${c.first_name || ''} ${c.last_name || ''}`.trim() || '—';
+      const zona   = c.address || c.zone || '—';
+      return `
+        <details class="delivery-card" data-id="${pkg.id}">
+          <summary>
+            <div class="pkg-main">
+              <span class="pkg-tracking">${safe(pkg.tracking_number)}</span>
+              <span class="pkg-client">${nombre}</span>
+              <span class="pkg-phone">${safe(c.phone)}</span>
+            </div>
+            <span class="pkg-badge">${safe(pkg.status)}</span>
+          </summary>
+          <div class="pkg-detail">
+            <table>
+              <tr><td>Código CBC</td><td>${safe(c.cbc_code)}</td></tr>
+              <tr><td>Teléfono</td><td>${safe(c.phone)}</td></tr>
+              <tr><td>Zona / dirección</td><td>${safe(zona)}</td></tr>
+              <tr><td>Modalidad</td><td>${safe(c.delivery_preference)}</td></tr>
+              <tr><td>Descripción</td><td>${safe(pkg.description)}</td></tr>
+              <tr><td>Tipo de envío</td><td>${safe(pkg.shipping_type)}</td></tr>
+              <tr><td>Saldo</td><td>${money(pkg.amount_due)}</td></tr>
+              <tr><td>Estado de pago</td><td>${safe(pkg.payment_status)}</td></tr>
+            </table>
+            <button class="btn-deliver" data-pkg="${pkg.id}">Marcar como Entregado</button>
+          </div>
+        </details>`;
+    }).join('');
+
+    list.querySelectorAll('.btn-deliver').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        btn.textContent = 'Actualizando...';
+        const { error } = await supa
+          .from('packages')
+          .update({ status: 'Entregado' })
+          .eq('id', btn.dataset.pkg);
+        if (error) {
+          btn.disabled = false;
+          btn.textContent = 'Marcar como Entregado';
+          return;
+        }
+        const card = btn.closest('.delivery-card');
+        card.style.transition = 'opacity .3s';
+        card.style.opacity = '0';
+        setTimeout(() => {
+          card.remove();
+          if (!list.querySelector('.delivery-card')) {
+            list.innerHTML = '<p class="pkg-empty">No hay paquetes pendientes de entrega. ¡Buen trabajo!</p>';
+          }
+        }, 300);
+      });
+    });
+  }
+
+  async function loadPackages() {
+    const { data: packages = [] } = await supa
+      .from('packages')
+      .select('*')
+      .neq('status', 'Entregado')
+      .order('created_at', { ascending: false });
+
+    if (!packages.length) {
+      renderDeliveryList([], {});
+      return;
+    }
+
+    const ids = [...new Set(packages.map(p => p.client_id))];
+    const { data: clients = [] } = await supa
+      .from('profiles')
+      .select('id, first_name, last_name, phone, address, zone, cbc_code, delivery_preference')
+      .in('id', ids);
+
+    const clientMap = Object.fromEntries(clients.map(c => [c.id, c]));
+    renderDeliveryList(packages, clientMap);
+  }
+
+  await loadPackages();
+  document.querySelector('.portal-shell')?.removeAttribute('hidden');
+  $('#logout')?.addEventListener('click', async () => { await supa.auth.signOut(); location.href = '/'; });
+}
+
+
 // ── ARRANQUE ─────────────────────────────────────────────────
 
 /**
@@ -626,7 +732,8 @@ async function initAdminPage() {
   if (window.CUBICO_CONFIG_READY) {
     try { await window.CUBICO_CONFIG_READY; } catch (e) { console.warn(e); }
   }
-  if (document.body.dataset.page === 'auth')   initAuthPage();
-  if (document.body.dataset.page === 'client') initClientPage();
-  if (document.body.dataset.page === 'admin')  initAdminPage();
+  if (document.body.dataset.page === 'auth')        initAuthPage();
+  if (document.body.dataset.page === 'client')      initClientPage();
+  if (document.body.dataset.page === 'admin')       initAdminPage();
+  if (document.body.dataset.page === 'repartidor')  initRepartidorPage();
 })();

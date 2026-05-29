@@ -29,7 +29,7 @@ create table if not exists public.profiles (
   zone                text,                              -- opcional: ciudad o área adicional
   delivery_preference text        not null default 'Retiro coordinado',
   cbc_code            text        unique,                -- asignado por el trigger; null solo durante el insert
-  role                text        not null default 'client' check (role in ('client', 'admin')),
+  role                text        not null default 'client' check (role in ('client', 'admin', 'repartidor')),
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now()
 );
@@ -146,10 +146,25 @@ $$;
 alter table public.profiles enable row level security;
 alter table public.packages enable row level security;
 
--- profiles: lectura
+-- ── FUNCIÓN AUXILIAR PARA REPARTIDORES ────────────────────────────────────────
+
+create or replace function public.is_repartidor()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'repartidor'
+  );
+$$;
+
+-- profiles: lectura (propio usuario, admin o repartidor)
 drop policy if exists "clients read own profile" on public.profiles;
 create policy "clients read own profile" on public.profiles
-  for select using (auth.uid() = id or public.is_admin());
+  for select using (auth.uid() = id or public.is_admin() or public.is_repartidor());
 
 -- profiles: actualización (solo el propio usuario)
 drop policy if exists "clients update own profile" on public.profiles;
@@ -161,13 +176,18 @@ drop policy if exists "clients insert own profile" on public.profiles;
 create policy "clients insert own profile" on public.profiles
   for insert with check (auth.uid() = id);
 
--- packages: lectura (propio cliente o admin)
+-- packages: lectura (propio cliente, admin o repartidor)
 drop policy if exists "clients read own packages" on public.packages;
 create policy "clients read own packages" on public.packages
-  for select using (auth.uid() = client_id or public.is_admin());
+  for select using (auth.uid() = client_id or public.is_admin() or public.is_repartidor());
 
 -- packages: gestión completa solo para admins (insert, update, delete)
 drop policy if exists "admins manage packages" on public.packages;
 create policy "admins manage packages" on public.packages
   for all using (public.is_admin()) with check (public.is_admin());
+
+-- packages: repartidor puede actualizar el estado (solo status; enforced en app)
+drop policy if exists "repartidor update packages" on public.packages;
+create policy "repartidor update packages" on public.packages
+  for update using (public.is_repartidor()) with check (public.is_repartidor());
 

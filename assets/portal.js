@@ -603,6 +603,15 @@ async function initAdminPage() {
 
   await loadAdmin(supa);
 
+  // ── Campo saldo: solo números y un punto decimal ───────────
+  $('#amountDue')?.addEventListener('input', function () {
+    let v = this.value.replace(/[^0-9.]/g, '');
+    const parts = v.split('.');
+    if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+    if (parts[1]?.length > 2) v = parts[0] + '.' + parts[1].slice(0, 2);
+    this.value = v;
+  });
+
   // ── Auto-marcar pago como Pagado al seleccionar Entregado ──
   $('#status')?.addEventListener('change', function () {
     if (this.value === 'Entregado') {

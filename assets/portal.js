@@ -444,8 +444,19 @@ async function initClientPage() {
     if (editAddress) editAddress.value = profile.address || '';
     if (editDelivery && profile.delivery_preference) editDelivery.value = profile.delivery_preference;
 
+    // Auto-formato XXXX-XXXX en el campo de teléfono del perfil
+    editPhone?.addEventListener('input', function () {
+      const digits = this.value.replace(/\D/g, '').slice(0, 8);
+      this.value = digits.length > 4 ? digits.slice(0, 4) + '-' + digits.slice(4) : digits;
+    });
+
     profileForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const phoneVal = editPhone?.value.trim() || '';
+      if (phoneVal && !/^\d{4}-\d{4}$/.test(phoneVal)) {
+        return showMessage($('#profileMsg'),
+          'Teléfono inválido. Formato requerido: <strong>6000-0000</strong>.', 'bad');
+      }
       const cedulaVal = editCedula?.value.trim().toUpperCase() || '';
       if (cedulaVal && !CEDULA_RE.test(cedulaVal)) {
         return showMessage($('#profileMsg'),

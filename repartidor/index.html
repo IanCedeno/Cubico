@@ -54,6 +54,15 @@
         </div>
       </div>
 
+      <div id="filterBar" style="display:none;margin-bottom:18px">
+        <div style="position:relative">
+          <select id="clientFilter" style="width:100%;background:var(--paper);border:1px solid var(--line);color:var(--ink);border-radius:12px;padding:13px 44px 13px 16px;font-size:15px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none;outline:none">
+            <option value="">Todos los clientes</option>
+          </select>
+          <span style="position:absolute;right:16px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:20px">⌄</span>
+        </div>
+      </div>
+
       <div id="deliveryList" class="delivery-list">
         <div class="delivery-card" style="padding:20px 22px"><span class="sk" style="width:60%;height:16px"></span><br><br><span class="sk" style="width:40%"></span></div>
         <div class="delivery-card" style="padding:20px 22px"><span class="sk" style="width:55%;height:16px"></span><br><br><span class="sk" style="width:35%"></span></div>

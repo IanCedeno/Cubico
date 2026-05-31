@@ -381,7 +381,7 @@ function renderClientPackages(items) {
     return;
   }
   tbody.innerHTML = items.map(p =>
-    `<tr>
+    `<tr data-status="${safe(p.status)}">
       <td>
         <div style="font-size:13px;font-weight:600">${safe(p.tracking_number)}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">${formatDate(p.created_at)}</div>
@@ -431,6 +431,31 @@ async function initClientPage() {
     .eq('client_id', profile.id)
     .order('created_at', { ascending: false });
   renderClientPackages(packages);
+
+  // Saldo pendiente total
+  const pendingBalance = packages
+    .filter(p => (p.payment_status || '').toLowerCase() !== 'pagado')
+    .reduce((sum, p) => sum + (Number(p.amount_due) || 0), 0);
+  const saldoEl = $('#clientSaldo');
+  if (saldoEl) saldoEl.textContent = money(pendingBalance);
+
+  // Filtro por estado de paquete
+  const pkgFilter = document.getElementById('pkgFilter');
+  const pkgFilterBar = document.getElementById('pkgFilterBar');
+  if (pkgFilter && pkgFilterBar && packages.length > 0) {
+    const statuses = [...new Set(packages.map(p => p.status).filter(Boolean))].sort();
+    if (statuses.length > 1) {
+      pkgFilter.innerHTML = '<option value="">Todos los estados</option>' +
+        statuses.map(s => `<option value="${s}">${s}</option>`).join('');
+      pkgFilterBar.style.display = 'block';
+      pkgFilter.addEventListener('change', () => {
+        const val = pkgFilter.value;
+        document.querySelectorAll('#clientPackages tr[data-status]').forEach(row => {
+          row.style.display = (!val || row.dataset.status === val) ? '' : 'none';
+        });
+      });
+    }
+  }
 
   // Formulario de edición de perfil (teléfono, zona, modalidad)
   const profileForm = $('#profileForm');
@@ -554,7 +579,7 @@ async function loadAdmin(supa) {
       <td>${safe(p.phone)}</td>
       <td>
         <select class="role-select" data-id="${p.id}"
-          style="background:#1a1a1a;color:#ccc;border:1px solid #333;border-radius:6px;padding:3px 8px;font-size:12px;cursor:pointer">
+          style="background:#1a1a1a;color:#ccc;border:1px solid #333;border-radius:6px;padding:3px 8px;font-size:12px;cursor:pointer;-webkit-appearance:none;appearance:none">
           <option value="client"      ${p.role === 'client'      ? 'selected' : ''}>client</option>
           <option value="admin"       ${p.role === 'admin'       ? 'selected' : ''}>admin</option>
           <option value="repartidor"  ${p.role === 'repartidor'  ? 'selected' : ''}>repartidor</option>
@@ -810,7 +835,7 @@ async function initRepartidorPage() {
       const nombre = `${c.first_name || ''} ${c.last_name || ''}`.trim() || '—';
       const zona   = c.address || c.zone || '—';
       return `
-        <details class="delivery-card" data-id="${pkg.id}">
+        <details class="delivery-card" data-id="${pkg.id}" data-client-id="${pkg.client_id}">
           <summary>
             <div class="pkg-main">
               <span class="pkg-tracking">${safe(pkg.tracking_number)}</span>
@@ -862,6 +887,38 @@ async function initRepartidorPage() {
     });
   }
 
+  function populateClientFilter(packages, clientMap) {
+    const select = document.getElementById('clientFilter');
+    const filterBar = document.getElementById('filterBar');
+    if (!select || !filterBar) return;
+
+    const seen = new Set();
+    const clientOptions = [];
+    packages.forEach(pkg => {
+      if (!seen.has(pkg.client_id)) {
+        seen.add(pkg.client_id);
+        const c = clientMap[pkg.client_id] || {};
+        const nombre = `${c.first_name || ''} ${c.last_name || ''}`.trim() || '—';
+        clientOptions.push({ id: pkg.client_id, nombre });
+      }
+    });
+
+    if (clientOptions.length <= 1) return;
+
+    clientOptions.sort((a, b) => a.nombre.localeCompare(b.nombre));
+    select.innerHTML = '<option value="">Todos los clientes</option>' +
+      clientOptions.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+
+    filterBar.style.display = 'block';
+
+    select.addEventListener('change', () => {
+      const val = select.value;
+      document.querySelectorAll('.delivery-card[data-client-id]').forEach(card => {
+        card.style.display = (!val || card.dataset.clientId === val) ? '' : 'none';
+      });
+    });
+  }
+
   async function loadPackages() {
     const { data: packages = [] } = await supa
       .from('packages')
@@ -882,6 +939,7 @@ async function initRepartidorPage() {
 
     const clientMap = Object.fromEntries(clients.map(c => [c.id, c]));
     renderDeliveryList(packages, clientMap);
+    populateClientFilter(packages, clientMap);
   }
 
   await loadPackages();

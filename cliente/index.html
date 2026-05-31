@@ -59,8 +59,8 @@
             <strong id="clientDelivery">—</strong>
           </div>
           <div class="portal-card">
-            <label>Saldo</label>
-            <strong>Ver paquetes</strong>
+            <label>Saldo pendiente</label>
+            <strong id="clientSaldo">—</strong>
           </div>
         </div>
 
@@ -114,6 +114,14 @@
             <div>
               <div class="eyebrow">Paquetes asignados</div>
               <h2>Disponibles, pendientes y entregados</h2>
+            </div>
+          </div>
+          <div id="pkgFilterBar" style="display:none;margin-bottom:16px">
+            <div style="position:relative">
+              <select id="pkgFilter" style="width:100%;background:var(--paper);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:11px 40px 11px 14px;font-size:14px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none;outline:none">
+                <option value="">Todos los estados</option>
+              </select>
+              <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:20px">⌄</span>
             </div>
           </div>
           <div class="table-wrap">

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Página no encontrada | CÚBICO</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <style>
+    .not-found {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px 24px;
+      background:
+        linear-gradient(180deg, rgba(0,0,0,.72) 0%, #050505 100%),
+        url('/assets/img/hero-panama.jpg') center / cover no-repeat;
+    }
+    .not-found img { width: 200px; margin-bottom: 48px; }
+    .not-found .code {
+      font-size: clamp(96px, 18vw, 180px);
+      font-weight: 900;
+      line-height: 1;
+      color: var(--gold);
+      letter-spacing: -.02em;
+      margin: 0 0 16px;
+    }
+    .not-found h1 {
+      font-size: clamp(22px, 4vw, 36px);
+      text-transform: uppercase;
+      margin: 0 0 16px;
+      letter-spacing: .04em;
+    }
+    .not-found p {
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.7;
+      max-width: 420px;
+      margin: 0 auto 40px;
+    }
+    .not-found .links {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="grain"></div>
+  <div class="not-found">
+    <img src="/assets/logo-cubico.svg" alt="CÚBICO" />
+    <div class="code">404</div>
+    <h1>Página no encontrada</h1>
+    <p>La dirección que buscas no existe o fue movida. Usa los enlaces de abajo para volver.</p>
+    <div class="links">
+      <a class="btn primary" href="/">Ir al inicio</a>
+      <a class="btn ghost" href="/tracking/">Buscar tracking</a>
+      <a class="btn ghost" href="/entrar/">Entrar a mi cuenta</a>
+    </div>
+  </div>
+</body>
+</html>

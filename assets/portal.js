@@ -247,6 +247,7 @@ async function initAuthPage() {
   // ── Registro de nuevo casillero ───────────────────────────
   registerForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (document.getElementById('website')?.value) return;
     if (!supa) return showMessage(registerMsg, 'Falta configurar Supabase.', 'bad');
     const password  = $('#regPassword').value;
     const password2 = $('#regPassword2').value;

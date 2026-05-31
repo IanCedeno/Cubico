@@ -31,6 +31,17 @@
  *   502 { error }     — error al llamar a la API de Resend
  */
 
+const rateMap = new Map();
+function isRateLimited(ip) {
+  const now = Date.now();
+  const entry = rateMap.get(ip) || { count: 0, start: now };
+  if (now - entry.start > 60_000) { rateMap.set(ip, { count: 1, start: now }); return false; }
+  if (entry.count >= 5) return true;
+  entry.count++;
+  rateMap.set(ip, entry);
+  return false;
+}
+
 function escapeHtml(str) {
   return String(str ?? '').replace(/[&<>"']/g, c => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]
@@ -40,6 +51,11 @@ function escapeHtml(str) {
 exports.handler = async function(event) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+  }
+
+  const ip = event.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
+  if (isRateLimited(ip)) {
+    return { statusCode: 429, body: JSON.stringify({ error: 'Demasiadas solicitudes. Intenta más tarde.' }) };
   }
 
   const RESEND_API_KEY = process.env.RESEND_API_KEY;

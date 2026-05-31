@@ -18,15 +18,26 @@
  *   502 — error de red al conectar con PTY Freight
  *   <status PTY Freight> — si PTY Freight devuelve un código de error, se reenvía tal cual
  */
+const ALLOWED_ORIGINS = (process.env.CUBICO_ALLOWED_ORIGINS || 'cubico.com.pa,netlify.app,localhost')
+  .split(',').map(o => o.trim()).filter(Boolean);
+
 exports.handler = async function(event) {
+  const origin = event.headers['origin'] || '';
+  const isAllowed = !origin || ALLOWED_ORIGINS.some(o => origin.includes(o));
+
   const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    ...(isAllowed ? { 'Access-Control-Allow-Origin': origin || '*', 'Access-Control-Allow-Headers': 'Content-Type' } : {}),
     'Content-Type': 'application/json; charset=utf-8'
   };
 
   if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 204, headers, body: '' };
+    return isAllowed
+      ? { statusCode: 204, headers, body: '' }
+      : { statusCode: 403, body: '' };
+  }
+
+  if (!isAllowed) {
+    return { statusCode: 403, headers, body: JSON.stringify({ status: 'error', message: 'Forbidden' }) };
   }
 
   const params = event.queryStringParameters || {};

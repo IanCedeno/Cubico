@@ -226,10 +226,18 @@ async function initAuthPage() {
   loginForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!supa) return showMessage(loginMsg, 'Falta configurar Supabase.', 'bad');
-    const email    = $('#loginEmail').value.trim();
+    let identifier = $('#loginEmail').value.trim();
     const password = $('#loginPassword').value;
     showMessage(loginMsg, 'Validando acceso...');
-    const { data, error } = await supa.auth.signInWithPassword({ email, password });
+
+    if (CEDULA_RE.test(identifier.toUpperCase())) {
+      const { data: email } = await supa
+        .rpc('get_email_by_cedula', { p_cedula: identifier.toUpperCase() });
+      if (!email) return showMessage(loginMsg, 'No encontramos una cuenta con esa cédula.', 'bad');
+      identifier = email;
+    }
+
+    const { data, error } = await supa.auth.signInWithPassword({ email: identifier, password });
     if (error) return showMessage(loginMsg, escapeHtml(error.message), 'bad');
     const { data: profile } = await supa.from('profiles').select('role').eq('id', data.user.id).single();
     const role = profile?.role;

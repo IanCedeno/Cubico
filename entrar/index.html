@@ -56,7 +56,10 @@
           <label>Correo o Cédula</label>
           <input id="loginEmail" type="text" required placeholder="tu@correo.com · 8-123-4567">
           <label style="margin-top:14px">Contraseña</label>
-          <input id="loginPassword" type="password" required placeholder="tu contraseña">
+          <div style="position:relative">
+            <input id="loginPassword" type="password" required placeholder="tu contraseña" style="padding-right:70px">
+            <button type="button" class="pwd-toggle" data-target="loginPassword" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;font-size:12px;font-weight:700;padding:4px 8px;letter-spacing:.5px">VER</button>
+          </div>
           <button class="btn" style="width:100%;margin-top:18px">Entrar</button>
           <div id="loginMsg" class="message"></div>
           <p style="text-align:center;margin-top:10px">
@@ -94,10 +97,6 @@
               <input id="address" required placeholder="Ej. Costa del Este, Obarrio, Brisas...">
             </div>
             <div>
-              <label>Zona</label>
-              <input id="zone" placeholder="Ciudad / área">
-            </div>
-            <div>
               <label>Modalidad preferida</label>
               <select id="deliveryPreference">
                 <option>Retiro coordinado</option>
@@ -107,13 +106,20 @@
             </div>
             <div>
               <label>Contraseña</label>
-              <input id="regPassword" type="password" minlength="6" required>
+              <div style="position:relative">
+                <input id="regPassword" type="password" minlength="6" required style="padding-right:70px">
+                <button type="button" class="pwd-toggle" data-target="regPassword" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;font-size:12px;font-weight:700;padding:4px 8px;letter-spacing:.5px">VER</button>
+              </div>
               <div class="pwd-strength"><div id="pwdStrengthBar" class="pwd-strength-bar"></div></div>
               <div id="pwdLabel" class="pwd-label"></div>
             </div>
             <div>
               <label>Repite contraseña</label>
-              <input id="regPassword2" type="password" minlength="6" required>
+              <div style="position:relative">
+                <input id="regPassword2" type="password" minlength="6" required style="padding-right:70px">
+                <button type="button" class="pwd-toggle" data-target="regPassword2" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;font-size:12px;font-weight:700;padding:4px 8px;letter-spacing:.5px">VER</button>
+              </div>
+              <div id="regPwdMatch" style="font-size:12px;margin-top:5px;min-height:16px"></div>
             </div>
           </div>
           <div style="display:none" aria-hidden="true">
@@ -140,9 +146,16 @@
         <!-- Formulario: Restablecer contraseña -->
         <form id="resetForm" class="hidden">
           <label>Nueva contraseña</label>
-          <input id="newPassword" type="password" minlength="6" required placeholder="mínimo 6 caracteres">
+          <div style="position:relative">
+            <input id="newPassword" type="password" minlength="6" required placeholder="mínimo 6 caracteres" style="padding-right:70px">
+            <button type="button" class="pwd-toggle" data-target="newPassword" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;font-size:12px;font-weight:700;padding:4px 8px;letter-spacing:.5px">VER</button>
+          </div>
           <label style="margin-top:14px">Repite la contraseña</label>
-          <input id="newPassword2" type="password" minlength="6" required placeholder="repite la contraseña">
+          <div style="position:relative">
+            <input id="newPassword2" type="password" minlength="6" required placeholder="repite la contraseña" style="padding-right:70px">
+            <button type="button" class="pwd-toggle" data-target="newPassword2" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;font-size:12px;font-weight:700;padding:4px 8px;letter-spacing:.5px">VER</button>
+          </div>
+          <div id="resetPwdMatch" style="font-size:12px;margin-top:5px;min-height:16px"></div>
           <button class="btn" style="width:100%;margin-top:18px">Guardar contraseña</button>
           <div id="resetMsg" class="message"></div>
         </form>

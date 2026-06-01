@@ -129,6 +129,9 @@ function showMessage(el, text, type = 'ok') {
 // el autocompletado de búsqueda, sin lanzar consultas adicionales.
 let adminProfiles = [];
 let adminPackages = [];
+let adminClientMap = {};
+let adminPkgPage = 1;
+const PKG_PAGE_SIZE = 20;
 
 
 // ── PÁGINA DE AUTENTICACIÓN (/entrar/) ──────────────────────
@@ -222,6 +225,33 @@ async function initAuthPage() {
     this.value = digits.length > 4 ? digits.slice(0, 4) + '-' + digits.slice(4) : digits;
   });
 
+  // Mostrar / ocultar contraseña
+  document.querySelectorAll('.pwd-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = document.getElementById(btn.dataset.target);
+      if (!input) return;
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.textContent = show ? 'OCULTAR' : 'VER';
+    });
+  });
+
+  // Coincidencia de contraseñas en tiempo real
+  function checkPwdMatch(pwd1Sel, pwd2Sel, indicatorSel) {
+    const pw1 = $(pwd1Sel)?.value || '';
+    const pw2 = $(pwd2Sel)?.value || '';
+    const el  = $(indicatorSel);
+    if (!el) return;
+    if (!pw2) { el.textContent = ''; return; }
+    const match = pw1 === pw2;
+    el.textContent = match ? '✓ Las contraseñas coinciden' : '✗ Las contraseñas no coinciden';
+    el.style.color = match ? '#2e7d32' : '#c62828';
+  }
+  $('#regPassword')?.addEventListener('input',  () => checkPwdMatch('#regPassword',  '#regPassword2', '#regPwdMatch'));
+  $('#regPassword2')?.addEventListener('input', () => checkPwdMatch('#regPassword',  '#regPassword2', '#regPwdMatch'));
+  $('#newPassword')?.addEventListener('input',  () => checkPwdMatch('#newPassword',  '#newPassword2', '#resetPwdMatch'));
+  $('#newPassword2')?.addEventListener('input', () => checkPwdMatch('#newPassword',  '#newPassword2', '#resetPwdMatch'));
+
   // ── Inicio de sesión ──────────────────────────────────────
   loginForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -274,7 +304,6 @@ async function initAuthPage() {
       phone,
       email,
       address:             $('#address').value.trim(),
-      zone:                $('#zone').value.trim(),
       delivery_preference: $('#deliveryPreference').value
     };
 
@@ -314,7 +343,7 @@ async function initAuthPage() {
     const email = $('#forgotEmail').value.trim();
     showMessage(forgotMsg, 'Enviando enlace...');
     const { error } = await supa.auth.resetPasswordForEmail(email, {
-      redirectTo: `${location.origin}/entrar/`
+      redirectTo: 'https://lucent-rolypoly-067aa5.netlify.app/entrar/'
     });
     if (error) return showMessage(forgotMsg, escapeHtml(error.message), 'bad');
     showMessage(forgotMsg, 'Listo. Revisa tu correo y sigue el enlace para restablecer tu contraseña.');
@@ -433,22 +462,30 @@ async function initClientPage() {
   $('#clientDelivery').textContent = safe(profile.delivery_preference);
   $('#miamiLine').textContent      = safe(profile.cbc_code || 'Pendiente de asignación');
 
-  // Paquetes asignados al cliente (ordenados del más reciente al más antiguo)
-  const { data: packages = [] } = await supa
-    .from('packages')
-    .select('*')
-    .eq('client_id', profile.id)
-    .order('created_at', { ascending: false });
-  renderClientPackages(packages);
+  // Carga y refresca paquetes, saldo y filtro activo
+  async function refreshPackages() {
+    const { data: pkgs = [] } = await supa
+      .from('packages').select('*')
+      .eq('client_id', profile.id)
+      .order('created_at', { ascending: false });
+    renderClientPackages(pkgs);
+    const pending = pkgs
+      .filter(p => (p.payment_status || '').toLowerCase() !== 'pagado')
+      .reduce((sum, p) => sum + (Number(p.amount_due) || 0), 0);
+    const saldoEl = $('#clientSaldo');
+    if (saldoEl) saldoEl.textContent = money(pending);
+    const activeFilter = document.getElementById('pkgFilter')?.value;
+    if (activeFilter) {
+      document.querySelectorAll('#clientPackages tr[data-status]').forEach(row => {
+        row.style.display = row.dataset.status === activeFilter ? '' : 'none';
+      });
+    }
+    return pkgs;
+  }
 
-  // Saldo pendiente total
-  const pendingBalance = packages
-    .filter(p => (p.payment_status || '').toLowerCase() !== 'pagado')
-    .reduce((sum, p) => sum + (Number(p.amount_due) || 0), 0);
-  const saldoEl = $('#clientSaldo');
-  if (saldoEl) saldoEl.textContent = money(pendingBalance);
+  const packages = await refreshPackages();
 
-  // Filtro por estado de paquete
+  // Filtro por estado (configuración única)
   const pkgFilter = document.getElementById('pkgFilter');
   const pkgFilterBar = document.getElementById('pkgFilterBar');
   if (pkgFilter && pkgFilterBar && packages.length > 0) {
@@ -465,6 +502,23 @@ async function initClientPage() {
       });
     }
   }
+
+  // Supabase Realtime: actualizaciones en vivo
+  supa.channel(`pkgs-${profile.id}`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'packages',
+      filter: `client_id=eq.${profile.id}`
+    }, async (payload) => {
+      await refreshPackages();
+      if (payload.eventType === 'INSERT') {
+        toast('¡Nuevo paquete asignado a tu cuenta!');
+      } else if (payload.eventType === 'UPDATE') {
+        toast(`Estado actualizado: ${safe(payload.new.status)}`);
+      }
+    })
+    .subscribe();
 
   // Formulario de edición de perfil (teléfono, zona, modalidad)
   const profileForm = $('#profileForm');
@@ -569,18 +623,21 @@ async function loadAdmin(supa) {
   const { data: packages = [] } = await supa
     .from('packages')
     .select('*')
-    .order('created_at', { ascending: false })
-    .limit(80);
+    .order('created_at', { ascending: false });
   adminPackages = packages;
+  adminClientMap = clientMap;
 
   // Tarjetas de resumen
+  const unpaid = packages.filter(p => String(p.payment_status).toLowerCase() !== 'pagado');
   $('#totalClients').textContent  = profiles.filter(p => p.role !== 'admin').length;
   $('#totalPackages').textContent = packages.length;
-  $('#totalPending').textContent  = packages.filter(p => String(p.payment_status).toLowerCase() !== 'pagado').length;
+  $('#totalPending').textContent  = unpaid.length;
+  const balanceEl = $('#totalBalance');
+  if (balanceEl) balanceEl.textContent = money(unpaid.reduce((s, p) => s + (Number(p.amount_due) || 0), 0));
 
   // Tabla de clientes registrados
   $('#clientList').innerHTML = profiles.map(p =>
-    `<tr>
+    `<tr data-client-id="${p.id}" style="cursor:pointer" title="Ver paquetes de ${safe(p.first_name)} ${safe(p.last_name)}">
       <td>${safe(p.cbc_code)}</td>
       <td>${safe(p.first_name)} ${safe(p.last_name)}</td>
       <td>${safe(p.cedula)}</td>
@@ -597,9 +654,34 @@ async function loadAdmin(supa) {
     </tr>`
   ).join('') || `<tr><td colspan="6" class="empty">Sin clientes.</td></tr>`;
 
-  // Tabla de paquetes con nombre del cliente resuelto y botones de acción
-  $('#packageList').innerHTML = packages.map(p => {
-    const cl = clientMap[p.client_id];
+  renderAdminPkgTable();
+}
+
+/**
+ * Renderiza la tabla de paquetes del admin aplicando filtros y paginación.
+ * Lee los valores actuales de #pkgStatusFilter y #pkgPayFilter del DOM para
+ * que funcione tanto al cargar como al cambiar filtros o página.
+ */
+function renderAdminPkgTable() {
+  const statusFilter = ($('#pkgStatusFilter')?.value || '').toLowerCase();
+  const payFilter    = ($('#pkgPayFilter')?.value    || '').toLowerCase();
+
+  let filtered = adminPackages;
+  if (statusFilter) filtered = filtered.filter(p => String(p.status || '').toLowerCase() === statusFilter);
+  if (payFilter)    filtered = filtered.filter(p => String(p.payment_status || '').toLowerCase() === payFilter);
+
+  const total      = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / PKG_PAGE_SIZE));
+  if (adminPkgPage > totalPages) adminPkgPage = totalPages;
+  if (adminPkgPage < 1) adminPkgPage = 1;
+
+  const start = (adminPkgPage - 1) * PKG_PAGE_SIZE;
+  const paged = filtered.slice(start, start + PKG_PAGE_SIZE);
+
+  const bs = 'background:#1a1a1a;border:1px solid #333;color:#ccc;border-radius:6px;padding:5px 14px;font-size:13px;cursor:pointer';
+
+  $('#packageList').innerHTML = paged.map(p => {
+    const cl = adminClientMap[p.client_id];
     const clientLabel = cl
       ? `${safe(cl.cbc_code)} · ${safe(cl.first_name)} ${safe(cl.last_name)}`
       : safe(p.client_id);
@@ -609,19 +691,97 @@ async function loadAdmin(supa) {
       <td><span class="status-pill ${statusClass(p.status)}">${safe(p.status)}</span></td>
       <td>${money(p.amount_due)}</td>
       <td>${safe(p.payment_status)}</td>
+      <td style="white-space:nowrap;font-size:12px;color:#888">${formatDate(p.created_at)}</td>
       <td style="white-space:nowrap">
         <button type="button" class="edit-pkg-btn" data-id="${p.id}"
-          style="background:none;border:1px solid #555;color:#ccc;font-size:12px;padding:4px 10px;border-radius:6px;cursor:pointer;margin-right:6px">
-          Editar
-        </button>
+          style="background:none;border:1px solid #555;color:#ccc;font-size:12px;padding:4px 10px;border-radius:6px;cursor:pointer;margin-right:6px">Editar</button>
         <button type="button" class="del-pkg-btn" data-id="${p.id}" data-tracking="${safe(p.tracking_number)}"
-          style="background:none;border:1px solid #8b2020;color:#e05555;font-size:12px;padding:4px 10px;border-radius:6px;cursor:pointer">
-          Eliminar
-        </button>
+          style="background:none;border:1px solid #8b2020;color:#e05555;font-size:12px;padding:4px 10px;border-radius:6px;cursor:pointer">Eliminar</button>
       </td>
     </tr>`;
-  }).join('') || `<tr><td colspan="6" class="empty">Sin paquetes.</td></tr>`;
+  }).join('') || `<tr><td colspan="7" class="empty">Sin paquetes.</td></tr>`;
+
+  const pag = $('#pkgPagination');
+  if (!pag) return;
+  if (totalPages <= 1) { pag.innerHTML = ''; return; }
+
+  pag.innerHTML = `
+    <button id="pkgPrev" ${adminPkgPage <= 1 ? 'disabled' : ''} style="${bs}${adminPkgPage <= 1 ? ';opacity:.4;cursor:default' : ''}">←</button>
+    <span style="font-size:13px;color:#888">Página ${adminPkgPage} de ${totalPages} &nbsp;·&nbsp; ${total} paquetes</span>
+    <button id="pkgNext" ${adminPkgPage >= totalPages ? 'disabled' : ''} style="${bs}${adminPkgPage >= totalPages ? ';opacity:.4;cursor:default' : ''}">→</button>
+  `;
+  $('#pkgPrev')?.addEventListener('click', () => { adminPkgPage--; renderAdminPkgTable(); });
+  $('#pkgNext')?.addEventListener('click', () => { adminPkgPage++; renderAdminPkgTable(); });
 }
+
+
+/**
+ * Muestra el modal de detalle de un cliente con sus paquetes y saldo.
+ * Usa adminProfiles y adminPackages (caché local) sin nuevas consultas a Supabase.
+ */
+function showClientModal(clientId) {
+  const profile = adminProfiles.find(p => p.id === clientId);
+  if (!profile) return;
+
+  const pkgs    = adminPackages.filter(p => p.client_id === clientId);
+  const unpaid  = pkgs.filter(p => String(p.payment_status).toLowerCase() !== 'pagado');
+  const balance = unpaid.reduce((s, p) => s + (Number(p.amount_due) || 0), 0);
+  const fullName = `${safe(profile.first_name)} ${safe(profile.last_name)}`.trim();
+
+  const content = $('#clientModalContent');
+  if (!content) return;
+
+  content.innerHTML = `
+    <div class="eyebrow" style="margin-bottom:6px">${safe(profile.cbc_code)}</div>
+    <h2 style="margin:0 0 4px;font-size:26px;font-weight:900">${fullName}</h2>
+    <p style="color:#888;font-size:14px;margin:0 0 22px">${safe(profile.email)} &nbsp;·&nbsp; ${safe(profile.phone)}</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:24px">
+      <div style="background:#f7f3ea;border:1px solid #ead9b3;border-radius:16px;padding:16px">
+        <div style="font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:#98743b;margin-bottom:6px">Paquetes</div>
+        <strong style="font-size:28px;display:block;color:#111">${pkgs.length}</strong>
+      </div>
+      <div style="background:#f7f3ea;border:1px solid #ead9b3;border-radius:16px;padding:16px">
+        <div style="font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:#98743b;margin-bottom:6px">Pendientes</div>
+        <strong style="font-size:28px;display:block;color:#111">${unpaid.length}</strong>
+      </div>
+      <div style="background:#f7f3ea;border:1px solid #ead9b3;border-radius:16px;padding:16px">
+        <div style="font-size:11px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:#98743b;margin-bottom:6px">Saldo pendiente</div>
+        <strong style="font-size:28px;display:block;color:#111">${money(balance)}</strong>
+      </div>
+    </div>
+
+    ${pkgs.length ? `
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Tracking</th>
+            <th>Estatus</th>
+            <th>Tipo</th>
+            <th>Saldo</th>
+            <th>Pago</th>
+            <th>Fecha</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${pkgs.map(p => `<tr>
+            <td>${safe(p.tracking_number)}</td>
+            <td><span class="status-pill ${statusClass(p.status)}">${safe(p.status)}</span></td>
+            <td>${safe(p.shipping_type)}</td>
+            <td>${money(p.amount_due)}</td>
+            <td>${safe(p.payment_status)}</td>
+            <td style="font-size:12px;color:#888;white-space:nowrap">${formatDate(p.created_at)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>` : '<p style="color:#888;text-align:center;padding:28px">Este cliente no tiene paquetes asignados aún.</p>'}
+  `;
+
+  const modal = $('#clientModal');
+  if (modal) modal.style.display = 'block';
+}
+
 
 /**
  * Inicializa el panel de administración (/admin/).
@@ -647,6 +807,43 @@ async function initAdminPage() {
   $('#logout')?.addEventListener('click', async () => { await supa.auth.signOut(); location.href = '/'; });
 
   await loadAdmin(supa);
+
+  // ── Sidebar: actualizar enlace activo al hacer clic ───────
+  document.querySelectorAll('.side a').forEach(link => {
+    link.addEventListener('click', () => {
+      document.querySelectorAll('.side a').forEach(l => l.classList.remove('active'));
+      link.classList.add('active');
+    });
+  });
+
+  // ── Filtros de la tabla de paquetes ───────────────────────
+  $('#pkgStatusFilter')?.addEventListener('change', () => { adminPkgPage = 1; renderAdminPkgTable(); });
+  $('#pkgPayFilter')?.addEventListener('change',    () => { adminPkgPage = 1; renderAdminPkgTable(); });
+
+  // ── Modal de detalle de cliente ───────────────────────────
+  $('#clientList')?.addEventListener('click', (e) => {
+    if (e.target.closest('.role-select')) return;
+    const row = e.target.closest('tr[data-client-id]');
+    if (!row) return;
+    showClientModal(row.dataset.clientId);
+  });
+  $('#closeClientModal')?.addEventListener('click', () => {
+    const m = $('#clientModal');
+    if (m) m.style.display = 'none';
+  });
+  $('#clientModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'clientModal') e.target.style.display = 'none';
+  });
+
+  // ── Realtime: recargar al detectar cambios en paquetes ────
+  supa.channel('admin-packages')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'packages' }, async (payload) => {
+      await loadAdmin(supa);
+      if (payload.eventType === 'INSERT') toast('Nuevo paquete registrado.');
+      else if (payload.eventType === 'UPDATE') toast(`Paquete actualizado: ${safe(payload.new?.tracking_number || '')}`);
+      else if (payload.eventType === 'DELETE') toast('Paquete eliminado.');
+    })
+    .subscribe();
 
   // ── Campo saldo: solo números y un punto decimal ───────────
   $('#amountDue')?.addEventListener('input', function () {
@@ -831,11 +1028,43 @@ async function initRepartidorPage() {
   }
 
   const list = $('#deliveryList');
+  let repPackages  = [];
+  let repClientMap = {};
+  let repSortMode  = 'fecha';
+
+  function pkgCountText(n) {
+    return n === 0 ? 'Sin paquetes pendientes' : `${n} paquete${n !== 1 ? 's' : ''} por entregar`;
+  }
+
+  function renderFiltered() {
+    const search   = ($('#pkgSearch')?.value   || '').toLowerCase().trim();
+    const clientId = ($('#clientFilter')?.value || '');
+
+    let filtered = repPackages;
+    if (clientId) filtered = filtered.filter(p => p.client_id === clientId);
+    if (search)   filtered = filtered.filter(p => {
+      const c = repClientMap[p.client_id] || {};
+      const name = `${c.first_name || ''} ${c.last_name || ''}`.toLowerCase();
+      return (p.tracking_number || '').toLowerCase().includes(search) || name.includes(search);
+    });
+
+    if (repSortMode === 'zona') {
+      filtered = [...filtered].sort((a, b) => {
+        const zA = (repClientMap[a.client_id]?.address || repClientMap[a.client_id]?.zone || '').toLowerCase();
+        const zB = (repClientMap[b.client_id]?.address || repClientMap[b.client_id]?.zone || '').toLowerCase();
+        return zA.localeCompare(zB, 'es');
+      });
+    }
+
+    renderDeliveryList(filtered, repClientMap);
+    const countEl = $('#pkgCount');
+    if (countEl) countEl.textContent = pkgCountText(repPackages.length);
+  }
 
   function renderDeliveryList(packages, clientMap) {
     if (!list) return;
     if (!packages.length) {
-      list.innerHTML = '<p class="pkg-empty">No hay paquetes pendientes de entrega.</p>';
+      list.innerHTML = `<p class="pkg-empty">${repPackages.length > 0 ? 'No hay paquetes que coincidan con el filtro.' : 'No hay paquetes pendientes de entrega.'}</p>`;
       return;
     }
 
@@ -883,6 +1112,9 @@ async function initRepartidorPage() {
           return;
         }
         toast('Paquete marcado como entregado.');
+        repPackages = repPackages.filter(p => p.id !== btn.dataset.pkg);
+        const countEl = $('#pkgCount');
+        if (countEl) countEl.textContent = pkgCountText(repPackages.length);
         const card = btn.closest('.delivery-card');
         card.style.transition = 'opacity .3s';
         card.style.opacity = '0';
@@ -920,12 +1152,7 @@ async function initRepartidorPage() {
 
     filterBar.style.display = 'block';
 
-    select.addEventListener('change', () => {
-      const val = select.value;
-      document.querySelectorAll('.delivery-card[data-client-id]').forEach(card => {
-        card.style.display = (!val || card.dataset.clientId === val) ? '' : 'none';
-      });
-    });
+    select.addEventListener('change', renderFiltered);
   }
 
   async function loadPackages() {
@@ -935,8 +1162,11 @@ async function initRepartidorPage() {
       .neq('status', 'Entregado')
       .order('created_at', { ascending: false });
 
+    repPackages = packages;
+
     if (!packages.length) {
-      renderDeliveryList([], {});
+      repClientMap = {};
+      renderFiltered();
       return;
     }
 
@@ -946,10 +1176,18 @@ async function initRepartidorPage() {
       .select('id, first_name, last_name, phone, address, zone, cbc_code, delivery_preference')
       .in('id', ids);
 
-    const clientMap = Object.fromEntries(clients.map(c => [c.id, c]));
-    renderDeliveryList(packages, clientMap);
-    populateClientFilter(packages, clientMap);
+    repClientMap = Object.fromEntries(clients.map(c => [c.id, c]));
+    renderFiltered();
+    populateClientFilter(packages, repClientMap);
   }
+
+  $('#pkgSearch')?.addEventListener('input', renderFiltered);
+  $('#sortToggle')?.addEventListener('click', () => {
+    repSortMode = repSortMode === 'fecha' ? 'zona' : 'fecha';
+    const btn = $('#sortToggle');
+    if (btn) btn.textContent = repSortMode === 'zona' ? 'Ordenar por fecha' : 'Ordenar por zona';
+    renderFiltered();
+  });
 
   await loadPackages();
   document.querySelector('.portal-shell')?.removeAttribute('hidden');

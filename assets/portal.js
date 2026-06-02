@@ -343,7 +343,7 @@ async function initAuthPage() {
     const email = $('#forgotEmail').value.trim();
     showMessage(forgotMsg, 'Enviando enlace...');
     const { error } = await supa.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://lucent-rolypoly-067aa5.netlify.app/entrar/'
+      redirectTo: 'https://cubicopty.netlify.app/entrar/'
     });
     if (error) return showMessage(forgotMsg, escapeHtml(error.message), 'bad');
     showMessage(forgotMsg, 'Listo. Revisa tu correo y sigue el enlace para restablecer tu contraseña.');

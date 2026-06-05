@@ -171,6 +171,16 @@ drop policy if exists "clients update own profile" on public.profiles;
 create policy "clients update own profile" on public.profiles
   for update using (auth.uid() = id) with check (auth.uid() = id);
 
+-- profiles: actualización por admin (cualquier perfil)
+drop policy if exists "admins update any profile" on public.profiles;
+create policy "admins update any profile" on public.profiles
+  for update using (public.is_admin()) with check (public.is_admin());
+
+-- profiles: eliminación por admin
+drop policy if exists "admins delete any profile" on public.profiles;
+create policy "admins delete any profile" on public.profiles
+  for delete using (public.is_admin());
+
 -- profiles: inserción (solo el propio usuario; el trigger usa security definer y bypasea RLS)
 drop policy if exists "clients insert own profile" on public.profiles;
 create policy "clients insert own profile" on public.profiles

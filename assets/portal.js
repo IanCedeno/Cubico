@@ -727,6 +727,7 @@ function showClientModal(clientId) {
   const unpaid  = pkgs.filter(p => String(p.payment_status).toLowerCase() !== 'pagado');
   const balance = unpaid.reduce((s, p) => s + (Number(p.amount_due) || 0), 0);
   const fullName = `${safe(profile.first_name)} ${safe(profile.last_name)}`.trim();
+  const esc = (v) => escapeHtml(String(v ?? ''));
 
   const content = $('#clientModalContent');
   if (!content) return;
@@ -752,16 +753,11 @@ function showClientModal(clientId) {
     </div>
 
     ${pkgs.length ? `
-    <div class="table-wrap">
+    <div class="table-wrap" style="margin-bottom:24px">
       <table>
         <thead>
           <tr>
-            <th>Tracking</th>
-            <th>Estatus</th>
-            <th>Tipo</th>
-            <th>Saldo</th>
-            <th>Pago</th>
-            <th>Fecha</th>
+            <th>Tracking</th><th>Estatus</th><th>Tipo</th><th>Saldo</th><th>Pago</th><th>Fecha</th>
           </tr>
         </thead>
         <tbody>
@@ -775,8 +771,109 @@ function showClientModal(clientId) {
           </tr>`).join('')}
         </tbody>
       </table>
-    </div>` : '<p style="color:#888;text-align:center;padding:28px">Este cliente no tiene paquetes asignados aún.</p>'}
+    </div>` : '<p style="color:#888;text-align:center;padding:20px 0">Sin paquetes asignados.</p>'}
+
+    <div style="border-top:1px solid var(--line);padding-top:20px;margin-top:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <strong style="font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#4b4b4b">Editar datos del cliente</strong>
+        <button id="toggleEditClient" type="button" class="btn ghost" style="padding:8px 16px;font-size:12px">Editar</button>
+      </div>
+      <form id="editClientForm" class="form-grid hidden">
+        <div><label>Nombre</label><input id="ec_first" value="${esc(profile.first_name)}"></div>
+        <div><label>Apellido</label><input id="ec_last" value="${esc(profile.last_name)}"></div>
+        <div><label>Teléfono</label><input id="ec_phone" value="${esc(profile.phone)}"></div>
+        <div><label>Cédula</label><input id="ec_cedula" value="${esc(profile.cedula)}"></div>
+        <div class="full"><label>Dirección</label><input id="ec_address" value="${esc(profile.address)}"></div>
+        <div><label>Código CBC</label><input id="ec_cbc" value="${esc(profile.cbc_code)}"></div>
+        <div><label>Rol</label>
+          <select id="ec_role">
+            <option value="client" ${profile.role==='client'?'selected':''}>client</option>
+            <option value="admin" ${profile.role==='admin'?'selected':''}>admin</option>
+            <option value="repartidor" ${profile.role==='repartidor'?'selected':''}>repartidor</option>
+          </select>
+        </div>
+        <div class="full">
+          <button type="submit" class="btn">Guardar cambios</button>
+          <div id="editClientMsg" class="message"></div>
+        </div>
+      </form>
+    </div>
+
+    <div style="border-top:1px solid #fee2e2;padding-top:16px;margin-top:16px">
+      <button id="deleteClientBtn" type="button" class="btn" style="background:#b42318;color:#fff;width:100%;border-radius:12px">
+        Eliminar cliente y todos sus datos
+      </button>
+      <div id="deleteClientMsg" class="message"></div>
+    </div>
   `;
+
+  // Toggle edición
+  content.querySelector('#toggleEditClient')?.addEventListener('click', () => {
+    const form = content.querySelector('#editClientForm');
+    form.classList.toggle('hidden');
+  });
+
+  // Guardar cambios
+  content.querySelector('#editClientForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = content.querySelector('#editClientMsg');
+    showMessage(msg, 'Guardando...');
+    const supa = getSupabase();
+    if (!supa) return showMessage(msg, 'Sin conexión a Supabase.', 'bad');
+
+    const { error } = await supa.from('profiles').update({
+      first_name:  content.querySelector('#ec_first').value.trim(),
+      last_name:   content.querySelector('#ec_last').value.trim(),
+      phone:       content.querySelector('#ec_phone').value.trim(),
+      cedula:      content.querySelector('#ec_cedula').value.trim().toUpperCase(),
+      address:     content.querySelector('#ec_address').value.trim(),
+      cbc_code:    content.querySelector('#ec_cbc').value.trim(),
+      role:        content.querySelector('#ec_role').value,
+      updated_at:  new Date().toISOString()
+    }).eq('id', clientId);
+
+    if (error) return showMessage(msg, escapeHtml(error.message), 'bad');
+    showMessage(msg, 'Cambios guardados.', 'ok');
+    const idx = adminProfiles.findIndex(p => p.id === clientId);
+    if (idx !== -1) {
+      adminProfiles[idx] = { ...adminProfiles[idx],
+        first_name: content.querySelector('#ec_first').value.trim(),
+        last_name:  content.querySelector('#ec_last').value.trim(),
+        phone:      content.querySelector('#ec_phone').value.trim(),
+        cedula:     content.querySelector('#ec_cedula').value.trim().toUpperCase(),
+        address:    content.querySelector('#ec_address').value.trim(),
+        cbc_code:   content.querySelector('#ec_cbc').value.trim(),
+        role:       content.querySelector('#ec_role').value,
+      };
+    }
+    toast('Perfil actualizado.');
+  });
+
+  // Eliminar cliente
+  content.querySelector('#deleteClientBtn')?.addEventListener('click', async () => {
+    const msg = content.querySelector('#deleteClientMsg');
+    if (!confirm(`¿Eliminar a ${fullName} y todos sus paquetes? Esta acción es irreversible.`)) return;
+    showMessage(msg, 'Eliminando...');
+
+    const supa = getSupabase();
+    if (!supa) return showMessage(msg, 'Sin conexión.', 'bad');
+    const { data: { session } } = await supa.auth.getSession();
+    if (!session) return showMessage(msg, 'Sesión expirada.', 'bad');
+
+    const res = await fetch('/.netlify/functions/admin-delete-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: clientId, token: session.access_token })
+    });
+    const json = await res.json();
+    if (!res.ok) return showMessage(msg, escapeHtml(json.error || 'Error al eliminar.'), 'bad');
+
+    adminProfiles = adminProfiles.filter(p => p.id !== clientId);
+    adminPackages = adminPackages.filter(p => p.client_id !== clientId);
+    $('#clientModal').style.display = 'none';
+    toast('Cliente eliminado.');
+    renderAdminPkgTable();
+  });
 
   const modal = $('#clientModal');
   if (modal) modal.style.display = 'block';

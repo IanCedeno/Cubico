@@ -1,9 +1,8 @@
 /**
  * admin-delete-user.js — Netlify Function: elimina un usuario de auth.users.
  *
- * Requiere la clave de servicio (SUPABASE_SERVICE_ROLE_KEY) para poder
- * eliminar usuarios de auth.users. El perfil y paquetes se eliminan en
- * cascada automáticamente por las FK definidas en la BD.
+ * Usa la REST API de Supabase directamente (sin SDK) para evitar
+ * dependencias de npm. Requiere SUPABASE_SERVICE_ROLE_KEY.
  *
  * VARIABLES DE ENTORNO REQUERIDAS:
  *   SUPABASE_URL              — URL del proyecto Supabase
@@ -13,8 +12,6 @@
  *   userId  — UUID del usuario a eliminar
  *   token   — JWT de sesión del admin que hace la petición
  */
-
-const { createClient } = require('@supabase/supabase-js');
 
 const ALLOWED_ORIGINS = (process.env.CUBICO_ALLOWED_ORIGINS || 'cubico.com.pa,netlify.app,localhost')
   .split(',').map(o => o.trim()).filter(Boolean);
@@ -50,27 +47,39 @@ exports.handler = async function (event) {
     return { statusCode: 500, body: JSON.stringify({ error: 'Configuración de servidor incompleta' }) };
   }
 
-  const supa = createClient(supaUrl, serviceKey);
-
-  // Verificar que el token pertenece a un admin
-  const { data: { user }, error: authErr } = await supa.auth.getUser(token);
-  if (authErr || !user) {
+  // 1. Verificar que el token pertenece a un usuario válido
+  const userRes = await fetch(`${supaUrl}/auth/v1/user`, {
+    headers: { Authorization: `Bearer ${token}`, apikey: serviceKey }
+  });
+  if (!userRes.ok) {
     return { statusCode: 401, body: JSON.stringify({ error: 'Token inválido' }) };
   }
-  const { data: adminProfile } = await supa
-    .from('profiles').select('role').eq('id', user.id).single();
-  if (adminProfile?.role !== 'admin') {
+  const { id: requesterId } = await userRes.json();
+
+  // 2. Verificar que ese usuario es admin consultando profiles
+  const profileRes = await fetch(
+    `${supaUrl}/rest/v1/profiles?id=eq.${requesterId}&select=role&limit=1`,
+    { headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey } }
+  );
+  const profiles = await profileRes.json();
+  if (!Array.isArray(profiles) || profiles[0]?.role !== 'admin') {
     return { statusCode: 403, body: JSON.stringify({ error: 'Solo administradores pueden eliminar usuarios' }) };
   }
 
-  // No permitir que el admin se elimine a sí mismo
-  if (userId === user.id) {
+  // 3. No permitir auto-eliminación
+  if (userId === requesterId) {
     return { statusCode: 400, body: JSON.stringify({ error: 'No puedes eliminar tu propia cuenta' }) };
   }
 
-  const { error: deleteErr } = await supa.auth.admin.deleteUser(userId);
-  if (deleteErr) {
-    return { statusCode: 500, body: JSON.stringify({ error: deleteErr.message }) };
+  // 4. Eliminar usuario de auth.users (cascada a profiles y packages)
+  const deleteRes = await fetch(`${supaUrl}/auth/v1/admin/users/${userId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey }
+  });
+
+  if (!deleteRes.ok) {
+    const err = await deleteRes.json().catch(() => ({}));
+    return { statusCode: 500, body: JSON.stringify({ error: err.message || 'Error al eliminar usuario' }) };
   }
 
   return {

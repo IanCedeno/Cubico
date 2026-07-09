@@ -65,7 +65,18 @@ declare
   name_part text;
 begin
   seq_num   := nextval('public.cbc_counter');
-  name_part := left(regexp_replace(p_first || p_last, '[^a-zA-Z0-9]', '', 'g'), 30);
+  -- Transliterar acentos y caracteres especiales antes de limpiar
+  name_part := left(
+    regexp_replace(
+      translate(
+        p_first || p_last,
+        'ÁÉÍÓÚáéíóúÑñÜüÀÈÌÒÙàèìòùÂÊÎÔÛâêîôûÃÕãõ',
+        'AEIOUaeiouNnUuAEIOUaeiouAEIOUaeiouAOao'
+      ),
+      '[^a-zA-Z0-9]', '', 'g'
+    ),
+    30
+  );
 
   if name_part = '' then
     name_part := 'Cliente';

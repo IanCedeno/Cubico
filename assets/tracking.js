@@ -25,6 +25,25 @@ const form = document.getElementById('tracking-form');
 const result = document.getElementById('tracking-result');
 const button = document.getElementById('tracking-button');
 
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+
+function getCached(tracking, type) {
+  try {
+    const raw = sessionStorage.getItem(`tr_${type}_${tracking}`);
+    if (!raw) return null;
+    const { ts, payload } = JSON.parse(raw);
+    if (Date.now() - ts < CACHE_TTL) return payload;
+    sessionStorage.removeItem(`tr_${type}_${tracking}`);
+  } catch {}
+  return null;
+}
+
+function setCache(tracking, type, payload) {
+  try {
+    sessionStorage.setItem(`tr_${type}_${tracking}`, JSON.stringify({ ts: Date.now(), payload }));
+  } catch {}
+}
+
 // Ajustable cuando tengamos confirmada la lista completa exacta de PTY Freight.
 const STATE_LABELS = {
   0: 'Recibido en Miami',
@@ -73,12 +92,41 @@ function renderPackage(pkg, index) {
     </article>`;
 }
 
+function renderPayload(payload, tracking, type) {
+  const packages = normalizePackages(payload, type);
+  const externalStatus = payload?.data?.status || 'ok';
+
+  if (!packages.length) {
+    result.className = 'tracking-result empty';
+    result.innerHTML = `
+      <span class="result-kicker">Sin resultados</span>
+      <h3>No encontramos información para este tracking.</h3>
+      <p>Verifica el número ingresado o intenta consultar en el otro tipo de carga.</p>`;
+    return;
+  }
+
+  result.className = 'tracking-result success';
+  result.innerHTML = `
+    <span class="result-kicker">Resultado encontrado</span>
+    <h3>${escapeHTML(tracking.toUpperCase())}</h3>
+    <p class="result-subtitle">Tipo de consulta: ${type === 'ocean' ? 'Flete marítimo' : 'Flete aéreo'} · Estado externo: ${escapeHTML(externalStatus)}</p>
+    <div class="package-list">${packages.map(renderPackage).join('')}</div>
+    <p class="result-disclaimer">Esta información viene de un proveedor externo y no modifica el estado interno de tu cuenta CÚBICO.</p>`;
+}
+
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   const tracking = document.getElementById('tracking-number').value.trim();
   const type = document.getElementById('tracking-type').value;
 
   if (!tracking) return;
+
+  const cached = getCached(tracking, type);
+  if (cached) {
+    renderPayload(cached, tracking, type);
+    return;
+  }
+
   button.disabled = true;
   button.textContent = 'Buscando...';
   result.className = 'tracking-result loading';
@@ -92,25 +140,8 @@ form.addEventListener('submit', async (event) => {
       throw new Error(payload.message || 'No pudimos consultar el tracking.');
     }
 
-    const packages = normalizePackages(payload, type);
-    const externalStatus = payload?.data?.status || 'ok';
-
-    if (!packages.length) {
-      result.className = 'tracking-result empty';
-      result.innerHTML = `
-        <span class="result-kicker">Sin resultados</span>
-        <h3>No encontramos información para este tracking.</h3>
-        <p>Verifica el número ingresado o intenta consultar en el otro tipo de carga.</p>`;
-      return;
-    }
-
-    result.className = 'tracking-result success';
-    result.innerHTML = `
-      <span class="result-kicker">Resultado encontrado</span>
-      <h3>${escapeHTML(tracking.toUpperCase())}</h3>
-      <p class="result-subtitle">Tipo de consulta: ${type === 'ocean' ? 'Flete marítimo' : 'Flete aéreo'} · Estado externo: ${escapeHTML(externalStatus)}</p>
-      <div class="package-list">${packages.map(renderPackage).join('')}</div>
-      <p class="result-disclaimer">Esta información viene de un proveedor externo y no modifica el estado interno de tu cuenta CÚBICO.</p>`;
+    setCache(tracking, type, payload);
+    renderPayload(payload, tracking, type);
   } catch (error) {
     result.className = 'tracking-result error';
     result.innerHTML = `

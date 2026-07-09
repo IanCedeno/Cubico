@@ -67,7 +67,11 @@ exports.handler = async function(event) {
 
     return {
       statusCode: 200,
-      headers,
+      headers: {
+        ...headers,
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=300',
+        'Netlify-CDN-Cache-Control': 'public, max-age=300, stale-while-revalidate=300'
+      },
       body: JSON.stringify({ source: 'ptyfreight', type, tracking_number: tracking, data })
     };
   } catch (error) {
